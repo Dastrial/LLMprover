@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from llmprover.proof_script import ProofScript
-
 
 @dataclass
 class CoqcResult:
@@ -49,46 +47,12 @@ class ProofAttempt:
 
 
 @dataclass
-class ProofContext:
+class AttemptRecord:
     """The context of a Goal."""
 
-    goal: Goal
-    previous_attempts: list[ProofAttempt]
-    rocq_errors: list[CoqcResult] = field(default_factory=list)
-    proved_lemmas: list[tuple[Goal, ProofScript]] = field(default_factory=list)
-    refuted_lemmas: list[Goal] = field(default_factory=list)
+    attempt: ProofAttempt
+    rocq_errors: CoqcResult
+    lemmas_attempts: list[list[AttemptRecord]] = field(default_factory=list)
 
 
-class ProofNode:
-    """The content of a node in the proof tree."""
-
-    def __init__(
-        self,
-        goal: Goal,
-        proof_attempts: list[ProofAttempt] | None = None,
-        current_attempt: ProofAttempt | None = None,
-    ) -> None:
-        self.goal = goal
-        self.proof_attempts = proof_attempts if proof_attempts is not None else []
-        self.current_attempt = current_attempt
-
-
-class ProofTree:
-    def __init__(
-        self, root: ProofNode, children: list[ProofNode] | None = None
-    ) -> None:
-        self.root = root
-        new_lemmas = (
-            root.current_attempt.new_lemmas if root.current_attempt is not None else []
-        )
-        if children is None:
-            children = [ProofNode(goal=lemma) for lemma in new_lemmas]
-        else:
-            actual_goals = [child.goal for child in children]
-            if actual_goals != new_lemmas:
-                raise ValueError(
-                    "Child goals must match new_lemmas from root proof_attempts: "
-                    f"expected {[goal.name for goal in new_lemmas]!r}, "
-                    f"got {[goal.name for goal in actual_goals]!r}"
-                )
-        self.children = children
+ProofRecord = AttemptRecord

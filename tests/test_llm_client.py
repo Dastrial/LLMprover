@@ -38,8 +38,8 @@ def test_openai_complete_returns_empty_string_when_content_is_none() -> None:
     mock_response.choices[0].message.content = None
     mock_client.chat.completions.create.return_value = mock_response
 
-    client = OpenAIClient(model="gpt-4o", client=mock_client)
-    assert client.complete(USER_MESSAGE) == ""
+    openai_client = OpenAIClient(model="gpt-4o", client=mock_client)
+    assert openai_client.complete(USER_MESSAGE) == ""
 
 
 @patch("llmprover.llm_client.OpenAI")
@@ -56,8 +56,8 @@ def test_openai_from_api_key_uses_default_model(mock_openai_cls: MagicMock) -> N
 
 @patch("llmprover.llm_client.OpenAI")
 def test_openai_from_api_key_accepts_custom_model(mock_openai_cls: MagicMock) -> None:
-    client = OpenAIClient.from_api_key("sk-test", model="gpt-4o-mini")
-    assert client.model == "gpt-4o-mini"
+    openai_client = OpenAIClient.from_api_key("sk-test", model="gpt-4o-mini")
+    assert openai_client.model == "gpt-4o-mini"
 
 
 def test_openai_from_env_reads_default_variable(
@@ -65,8 +65,8 @@ def test_openai_from_env_reads_default_variable(
 ) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "sk-from-env")
     with patch("llmprover.llm_client.OpenAI") as mock_openai_cls:
-        client = OpenAIClient.from_env()
-    assert client.model == OpenAIClient.DEFAULT_MODEL
+        openai_client = OpenAIClient.from_env()
+    assert openai_client.model == OpenAIClient.DEFAULT_MODEL
     mock_openai_cls.assert_called_once_with(api_key="sk-from-env")
 
 
@@ -86,8 +86,8 @@ def test_openai_from_env_reads_custom_env_var(
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.setenv("CUSTOM_OPENAI_KEY", "sk-custom-env")
     with patch("llmprover.llm_client.OpenAI") as mock_openai_cls:
-        client = OpenAIClient.from_env("CUSTOM_OPENAI_KEY")
-    assert client.model == OpenAIClient.DEFAULT_MODEL
+        openai_client = OpenAIClient.from_env("CUSTOM_OPENAI_KEY")
+    assert openai_client.model == OpenAIClient.DEFAULT_MODEL
     mock_openai_cls.assert_called_once_with(api_key="sk-custom-env")
 
 
@@ -96,8 +96,8 @@ def test_openai_from_env_accepts_custom_model(
 ) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "sk-from-env")
     with patch("llmprover.llm_client.OpenAI"):
-        client = OpenAIClient.from_env(model="gpt-4o")
-    assert client.model == "gpt-4o"
+        openai_client = OpenAIClient.from_env(model="gpt-4o")
+    assert openai_client.model == "gpt-4o"
 
 
 # --- MistralAIClient ---
@@ -109,8 +109,8 @@ def test_mistral_complete_returns_assistant_text() -> None:
     mock_response.choices[0].message.content = "Bonjour"
     mock_client.chat.complete.return_value = mock_response
 
-    client = MistralAIClient(model="mistral-large-latest", client=mock_client)
-    assert client.complete(USER_MESSAGE) == "Bonjour"
+    mistral_client = MistralAIClient(model="mistral-large-latest", client=mock_client)
+    assert mistral_client.complete(USER_MESSAGE) == "Bonjour"
     mock_client.chat.complete.assert_called_once_with(
         model="mistral-large-latest",
         messages=USER_MESSAGE,
@@ -134,8 +134,8 @@ def test_mistral_from_env_reads_default_variable(
 ) -> None:
     monkeypatch.setenv("MISTRAL_API_KEY", "mistral-from-env")
     with patch("llmprover.llm_client.Mistral") as mock_mistral_cls:
-        client = MistralAIClient.from_env()
-    assert client.model == "mistral-large-latest"
+        mistral_client = MistralAIClient.from_env()
+    assert mistral_client.model == "mistral-large-latest"
     mock_mistral_cls.assert_called_once_with(api_key="mistral-from-env")
 
 
@@ -151,8 +151,8 @@ def test_mistral_from_env_raises_when_key_missing(
 
 @patch("llmprover.llm_client.Mistral")
 def test_mistral_from_api_key_accepts_custom_model(mock_mistral_cls: MagicMock) -> None:
-    client = MistralAIClient.from_api_key("mistral-key", model="mistral-small-latest")
-    assert client.model == "mistral-small-latest"
+    mistral_client = MistralAIClient.from_api_key("mistral-key", model="mistral-small-latest")
+    assert mistral_client.model == "mistral-small-latest"
 
 
 def test_mistral_from_env_reads_custom_env_var(
@@ -161,8 +161,8 @@ def test_mistral_from_env_reads_custom_env_var(
     monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
     monkeypatch.setenv("CUSTOM_MISTRAL_KEY", "mistral-custom-env")
     with patch("llmprover.llm_client.Mistral") as mock_mistral_cls:
-        client = MistralAIClient.from_env("CUSTOM_MISTRAL_KEY")
-    assert client.model == MistralAIClient.DEFAULT_MODEL
+        mistral_client = MistralAIClient.from_env("CUSTOM_MISTRAL_KEY")
+    assert mistral_client.model == MistralAIClient.DEFAULT_MODEL
     mock_mistral_cls.assert_called_once_with(api_key="mistral-custom-env")
 
 
@@ -171,8 +171,8 @@ def test_mistral_from_env_accepts_custom_model(
 ) -> None:
     monkeypatch.setenv("MISTRAL_API_KEY", "mistral-from-env")
     with patch("llmprover.llm_client.Mistral"):
-        client = MistralAIClient.from_env(model="mistral-small-latest")
-    assert client.model == "mistral-small-latest"
+        mistral_client = MistralAIClient.from_env(model="mistral-small-latest")
+    assert mistral_client.model == "mistral-small-latest"
 
 
 # --- AnthropicClient ---
@@ -190,8 +190,8 @@ def test_anthropic_complete_splits_system_messages_and_keeps_user_messages() -> 
     mock_client.messages.create.return_value = mock_response
 
     model = "claude-sonnet-4-20250514"
-    client = AnthropicClient(model=model, client=mock_client)
-    assert client.complete(SYSTEM_AND_USER) == "Response text"
+    anthropic_client = AnthropicClient(model=model, client=mock_client)
+    assert anthropic_client.complete(SYSTEM_AND_USER) == "Response text"
     mock_client.messages.create.assert_called_once_with(
         model=model,
         messages=USER_MESSAGE,
@@ -214,8 +214,8 @@ def test_anthropic_complete_joins_multiple_system_messages() -> None:
         {"role": "system", "content": "Part 2"},
         {"role": "user", "content": "Hi"},
     ]
-    client = AnthropicClient(model=AnthropicClient.DEFAULT_MODEL, client=mock_client)
-    client.complete(messages)
+    anthropic_client = AnthropicClient(model=AnthropicClient.DEFAULT_MODEL, client=mock_client)
+    anthropic_client.complete(messages)
 
     kwargs = mock_client.messages.create.call_args.kwargs
     assert kwargs["system"] == "Part 1\n\nPart 2"
@@ -231,8 +231,8 @@ def test_anthropic_complete_omits_system_when_none() -> None:
     mock_response.content = [text_block]
     mock_client.messages.create.return_value = mock_response
 
-    client = AnthropicClient(model=AnthropicClient.DEFAULT_MODEL, client=mock_client)
-    client.complete(USER_MESSAGE)
+    anthropic_client = AnthropicClient(model=AnthropicClient.DEFAULT_MODEL, client=mock_client)
+    anthropic_client.complete(USER_MESSAGE)
 
     kwargs = mock_client.messages.create.call_args.kwargs
     assert "system" not in kwargs
@@ -267,10 +267,10 @@ def test_anthropic_from_env_raises_when_key_missing(
 def test_anthropic_from_api_key_accepts_custom_model(
     mock_anthropic_cls: MagicMock,
 ) -> None:
-    client = AnthropicClient.from_api_key(
+    anthropic_client = AnthropicClient.from_api_key(
         "anthropic-key", model="claude-sonnet-4-20250514"
     )
-    assert client.model == "claude-sonnet-4-20250514"
+    assert anthropic_client.model == "claude-sonnet-4-20250514"
 
 
 def test_anthropic_from_env_reads_custom_env_var(
@@ -279,8 +279,8 @@ def test_anthropic_from_env_reads_custom_env_var(
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("CUSTOM_ANTHROPIC_KEY", "anthropic-custom-env")
     with patch("llmprover.llm_client.Anthropic") as mock_anthropic_cls:
-        client = AnthropicClient.from_env("CUSTOM_ANTHROPIC_KEY")
-    assert client.model == AnthropicClient.DEFAULT_MODEL
+        anthropic_client = AnthropicClient.from_env("CUSTOM_ANTHROPIC_KEY")
+    assert anthropic_client.model == AnthropicClient.DEFAULT_MODEL
     mock_anthropic_cls.assert_called_once_with(api_key="anthropic-custom-env")
 
 
@@ -289,5 +289,5 @@ def test_anthropic_from_env_accepts_custom_model(
 ) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "anthropic-from-env")
     with patch("llmprover.llm_client.Anthropic"):
-        client = AnthropicClient.from_env(model="claude-sonnet-4-20250514")
-    assert client.model == "claude-sonnet-4-20250514"
+        anthropic_client = AnthropicClient.from_env(model="claude-sonnet-4-20250514")
+    assert anthropic_client.model == "claude-sonnet-4-20250514"
