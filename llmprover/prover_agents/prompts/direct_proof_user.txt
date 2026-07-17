@@ -1,0 +1,6 @@
+Write the Rocq proof body for the following formula.
+
+Statement: {statement}
+
+Output only tactics between Proof. and Qed.
+When possible, keep lines under 80 characters.

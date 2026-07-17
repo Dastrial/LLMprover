@@ -4,18 +4,26 @@ LLM-driven automatic theorem proving for Rocq/Coq, based on lemma-decomposition 
 
 ## What works today
 
-- Compile and validate `.v` scripts via `coqc`
+- Compile and validate `.v` scripts via `coqc` (statement follows attempt polarity: `P` or `~ (P)`)
 - Multi-provider LLM client (OpenAI, Anthropic, Mistral)
-- Domain types for goals, proof attempts, and proof records.
+- Domain types: `Goal`, `Polarity`, `ProofAttempt`, `AttemptRecord`, `LemmaNode`
+- LLM prover agents: direct, repair, decomposition (`prove(node, polarity)`)
 - Test suite with mocked LLM calls
+
+## Design snapshot
+
+- Each lemma is identified by a single `Goal` whose statement is a formula `P`.
+- The search may try to prove `P` **or** its negation `~P`. Both kinds of attempts belong to the same lemma and are stored in two separate histories (positive and negative).
+- If a proof of `~P` succeeds, the lemma is **refuted**: that outcome is an error for any parent that depended on proving `P`, and it must propagate upward.
+- In the first version, `~P` is obtained by wrapping the statement as `~ (P)`.
+- Agents offer three generation strategies — **direct**, **repair**, and **decomposition** — each usable on either polarity (`P` or `~P`).
 
 ## Roadmap
 
-- [ ] LLM agent class (modes: direct, repair, decomposition, negation)
-- [ ] Orchestration + strategies
-- [ ] **`check_attempt` assumption check** — after a successful compile, verify that the main goal's proof depends only on lemmas listed in `new_lemmas` (e.g. via Rocq `Print Assumptions`); reject attempts that smuggle in extra dependencies
-- [ ] **Library imports** — `Require Import` / prelude configuration so goals can use stdlib or project modules
-- [ ] **Custom axiom environments** — goals stated over a user-provided context (axioms, existing lemmas), not only closed Prop/nat fragments
+- [ ] Orchestration + strategies (walk `LemmaNode` trees with dual attempt histories)
+- [ ] **`check_attempt` assumption check** — after a successful compile, verify that the main goal's proof depends only on lemmas listed in `new_lemmas` (e.g. via Rocq `Print Assumptions`)
+- [ ] **Library imports** — `Require Import` / prelude configuration
+- [ ] **Custom axiom environments** — goals over a user-provided context
 - [ ] Interactive proving mode with Pytanque
 
 ## Quick start
@@ -23,7 +31,7 @@ LLM-driven automatic theorem proving for Rocq/Coq, based on lemma-decomposition 
 ```bash
 pip install -e ".[dev]"
 python3 -m pytest
-python main.py   # LLM generates a proof, coqc validates it (requires API key + coqc)
+python main.py   # DirectAgent + LemmaNode: prove, check, append, print status
 ```
 
 ## API keys
@@ -57,42 +65,48 @@ Shell exports take precedence over `.env` if both are set.
 ```
 main.py
    │
-   ├── domain/          Goal, ProofAttempt, CoqcResult, ProofRecord (orchestrator & agent state, unused)
-   ├── proof_script/    ProofScript (.v file I/O)
-   ├── rocq/            CoqcBackend — assemble scripts, run coqc
-   └── llm/             LLMClient — OpenAI, Anthropic, Mistral
+   ├── domain.py         Goal, Polarity, ProofAttempt, CoqcResult, AttemptRecord, LemmaNode
+   ├── proof_script.py   ProofScript (.v file I/O)
+   ├── rocq.py           CoqcBackend — assemble scripts, run coqc
+   ├── llm_client.py     LLMClient — OpenAI, Anthropic, Mistral
+   ├── prompts.py        Prompt load / fill
+   └── prover_agents/    Direct, repair, decomposition (+ utils)
 ```
 
 **Dependency flow** (each layer only imports from layers above it):
 
 ```
 proof_script  →  domain  →  rocq
-                         →  llm
+                         →  llm_client
+                         →  prover_agents
 ```
 
 | Module | Role |
 |--------|------|
 | `proof_script.py` | Rocq source text (`ProofScript`, `from_file`) |
-| `domain.py` | Core types: what to prove (`Goal`), what the LLM tried (`ProofAttempt`), validation outcome (`CoqcResult`). `ProofRecord` will hold the orchestrator’s global state — current proof progress and past search — but is not wired up yet. |
-| `rocq.py` | Runs `coqc` on a `ProofScript` or a full `ProofAttempt` (with admitted lemmas) |
+| `domain.py` | `Goal`, `Polarity`, `ProofAttempt`, `CoqcResult`, `AttemptRecord`, `LemmaNode` (dual attempt histories + status) |
+| `rocq.py` | Runs `coqc` on a `ProofScript` or a full `ProofAttempt` (main statement from polarity) |
 | `llm_client.py` | Stateless chat-completion wrapper over LLM provider SDKs |
+| `prover_agents/` | `ProverAgent.prove(node, polarity)` implementations and shared helpers |
 
-**Planned** (not in the first release): `ProverAgent`, `Orchestrator`, `OrchestrationStrategy`, `AgentRegistry`, `pytanque_session`.
+**Planned:** `Orchestrator`, `OrchestrationStrategy`, `AgentRegistry`, `pytanque_session`.
 
 ### Design notes
 
-**`ProofScript`** is a thin dataclass around a `str` (Rocq source). A plain string would work for most of the current code; the class is kept as a hook for script-level operations (`from_file`, future `replace_lemma`, etc.). Whether a dedicated type pays off will become clearer once decomposition and merge are implemented — left as-is for now.
+**`ProofScript`** is a thin dataclass around a `str` (Rocq source). A plain string would work for most of the current code; the class is kept as a hook for script-level operations (`from_file`, future `replace_lemma`, etc.).
 
-**`ProofRecord`** is defined in `domain.py` but not wired to any runner yet; it will hold orchestrator state when recursive search lands, and used by prover agents to recover search history.
+**`LemmaNode`** is the search unit for one lemma: canonical `Goal` (`P`), positive and negative attempt lists, and a derived status (`Open` / `Proved` / `Refuted`). **`AttemptRecord`** stores a checked `ProofAttempt`, the `CoqcResult`, and child lemma attempt lists for decomposition.
 
+**Polarity.** For a lemma with statement `P`, an attempt is either positive (try to prove `P`) or negative (try to prove `~P`). The lemma’s identity stays `P`; each `ProofAttempt` records which polarity was attacked. When the negated statement is needed (prompts, `coqc` scripts), the first version builds it as `~ (P)`.
 
-**Decomposition invariant (not enforced yet).** When `new_lemmas` is non-empty, a valid parent proof should use *only* those admitted lemmas as logical dependencies — no hidden appeals to stdlib lemmas, axioms, or other admits. Today `check_attempt` only checks that the assembled script compiles; it does **not** yet verify assumptions. That check is required for sound recursive decomposition and is on the roadmap.
+**Decomposition invariant (not enforced yet).** When `new_lemmas` is non-empty, a valid parent proof should use *only* those admitted lemmas as logical dependencies. Today `check_attempt` only checks that the assembled script compiles.
 
-**Current limitations.** Scripts are self-contained fragments: no `Require Import`, no configurable prelude, and no support for proving goals in a rich ambient theory (custom axioms, imported libraries). The demo in `main.py` uses bare `Prop`/`/\` tactics without imports.
+**Current limitations.** Scripts are self-contained fragments: no `Require Import`, no configurable prelude, and no rich ambient theory. The demo in `main.py` uses bare `Prop`/`/\` tactics without imports.
 
 ### Proof loop (target design)
 
-1. `ProverAgent` proposes a `ProofAttempt` for a `Goal`.
-2. `CoqcBackend.make_script` assembles a complete `.v` file and `check_attempt` validates it.
-3. On failure, the raw `CoqcResult.output` is fed back into a `ProofRecord` for repair or mode switch.
-4. The orchestrator updates a `ProofRecord` and keep a list of `ProofRecord` as search progresses (nodes, attempts, subgoals).
+1. `ProverAgent.prove(node, polarity)` proposes a `ProofAttempt` for the lemma.
+2. `CoqcBackend.make_script` assembles a complete `.v` file (using `P` or `~ (P)`) and `check_attempt` validates it.
+3. On failure, the `CoqcResult` is stored in an `AttemptRecord` on that polarity’s history for repair or mode/polarity switch.
+4. On negation success, mark the lemma refuted and propagate failure upward.
+5. The orchestrator maintains lemma nodes and walks the search (details TBD).

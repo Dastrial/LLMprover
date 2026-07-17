@@ -43,11 +43,15 @@ class CoqcBackend:
             )
 
     def make_script(self, attempt: ProofAttempt) -> ProofScript:
-        """Make a ProofScript from a proof attempt that may contain admitted lemmas."""
+        """Make a ProofScript from a proof attempt that may contain admitted lemmas.
+
+        The main lemma statement follows ``attempt.polarity`` (``P`` or ``~ (P)``).
+        Helper lemmas in ``new_lemmas`` keep their own canonical statements.
+        """
         code = ""
         for lemma in attempt.new_lemmas:
             code += f"Lemma {lemma.name}: {lemma.statement}.\n Proof.\n admit.\n Admitted.\n\n"
-        code += f"Lemma {attempt.goal.name}: {attempt.goal.statement}.\n"
+        code += f"Lemma {attempt.goal.name}: {attempt.target_statement}.\n"
         code += f"Proof.\n{attempt.script}\nQed."
         return ProofScript(code=code)
 

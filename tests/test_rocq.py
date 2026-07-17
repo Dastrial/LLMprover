@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from llmprover.domain import Goal, ProofAttempt
+from llmprover.domain import Goal, Polarity, ProofAttempt
 from llmprover.proof_script import ProofScript
 from llmprover.rocq import CoqcBackend
 
@@ -88,6 +88,52 @@ def test_make_script_includes_admitted_lemmas() -> None:
         "Qed."
     )
     assert script.code == expected
+
+
+def test_make_script_uses_negated_statement_for_negative_polarity() -> None:
+    goal = Goal(statement="forall n : nat, n + 0 = n.", name="plus_n0")
+    attempt = ProofAttempt(
+        goal=goal,
+        script="intro H. discriminate.",
+        new_lemmas=[],
+        polarity=Polarity.Negative,
+    )
+    backend = CoqcBackend()
+
+    script = backend.make_script(attempt)
+
+    assert script.code == (
+        "Lemma plus_n0: ~ (forall n : nat, n + 0 = n.).\n"
+        "Proof.\n"
+        "intro H. discriminate.\n"
+        "Qed."
+    )
+
+
+def test_make_script_negative_polarity_keeps_helper_statements() -> None:
+    main = Goal(statement="True", name="main")
+    helper = Goal(statement="False", name="helper")
+    attempt = ProofAttempt(
+        goal=main,
+        script="apply helper.",
+        new_lemmas=[helper],
+        polarity=Polarity.Negative,
+    )
+    backend = CoqcBackend()
+
+    script = backend.make_script(attempt)
+
+    assert script.code == (
+        "Lemma helper: False.\n"
+        " Proof.\n"
+        " admit.\n"
+        " Admitted.\n"
+        "\n"
+        "Lemma main: ~ (True).\n"
+        "Proof.\n"
+        "apply helper.\n"
+        "Qed."
+    )
 
 
 # --- CoqcBackend (real coqc) ---

@@ -1,0 +1,11 @@
+Decompose the following formula into simpler helper lemmas, then write the tactic script for the main goal.
+
+Statement: {statement}
+
+Output format:
+1. One helper lemma per line, as LemmaName: statement.
+2. A blank line.
+3. The main proof script: Rocq tactics only.
+
+Do not include Proof., Qed., Lemma, Require Import, admit/Admitted, markdown fences, comments, or explanations.
+When possible, keep lines under 80 characters.

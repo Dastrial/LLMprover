@@ -1,0 +1,10 @@
+Write the Rocq proof body for the following formula.
+
+Statement: {statement}
+
+=== Failed attempts on this formula ===
+{this_formula_attempts}
+=== Failed attempts on the opposite polarity ===
+{opposite_attempts}
+Output only tactics between Proof. and Qed.
+When possible, keep lines under 80 characters.
