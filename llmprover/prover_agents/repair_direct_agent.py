@@ -27,6 +27,13 @@ class RepairDirectAgent(ProverAgent):
     histories from the lemma node.
     """
 
+    DEFAULT_SPEC = (
+        "Writes a direct proof (no new decomposition) using previous failed "
+        "direct attempts on both polarities. Token cost grows with the number "
+        "of failed direct attempts included in the prompt; cheaper than "
+        "decomposition because history omits decomposition attempts."
+    )
+
     def __init__(self, model: LLMClient) -> None:
         self.model = model
 

@@ -20,6 +20,12 @@ class DirectAgent(ProverAgent):
     polarity) in the user message. Previous attempts are ignored.
     """
 
+    DEFAULT_SPEC = (
+        "Writes a direct proof with no decomposition and ignores previous "
+        "attempts. Cheapest agent in tokens: fixed short prompt, cost does not "
+        "grow with search history."
+    )
+
     def __init__(self, model: LLMClient) -> None:
         self.model = model
 

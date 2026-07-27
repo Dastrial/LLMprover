@@ -15,11 +15,13 @@ from llmprover.llm_client import LLMClient
 from llmprover.prompts import fill_prompt, load_prompt
 from llmprover.prover_agents.prover_agent import ProverAgent
 from llmprover.prover_agents.utils import (
+    format_attempts,
     strip_markdown_fences,
     strip_proof_wrappers,
 )
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
+EMPTY_ATTEMPTS = "No previous attempts.\n"
 
 
 def parse_decomposition_answer(answer: str) -> tuple[list[Goal], str]:
@@ -46,17 +48,43 @@ def parse_decomposition_answer(answer: str) -> tuple[list[Goal], str]:
 
 
 class DecompositionAgent(ProverAgent):
-    """LLM-based agent for decomposing a goal into lemmas"""
+    """LLM-based agent for decomposing a goal into lemmas.
+
+    Includes the full attempt history (direct and decomposition attempts) for
+    both polarities, so the model can avoid repeating failed strategies.
+    """
+
+    DEFAULT_SPEC = (
+        "Decomposes the goal into helper lemmas using the full attempt history "
+        "(direct and decomposition, both polarities), including helper-lemma "
+        "statuses. Most token-hungry agent: prompt size grows with every failed "
+        "attempt and with the lemmas attached to decompositions."
+    )
 
     def __init__(self, model: LLMClient) -> None:
         self.model = model
 
+    @staticmethod
+    def format_histories(node: LemmaNode) -> tuple[str, str]:
+        return (
+            format_attempts(node.positive, empty=EMPTY_ATTEMPTS),
+            format_attempts(node.negative, empty=EMPTY_ATTEMPTS),
+        )
+
     def prove(self, node: LemmaNode, polarity: Polarity) -> ProofAttempt:
         goal = node.goal
+        this_formula_attempts, opposite_attempts = self.format_histories(node)
+        if polarity is Polarity.Negative:
+            this_formula_attempts, opposite_attempts = (
+                opposite_attempts,
+                this_formula_attempts,
+            )
         system = load_prompt(PROMPTS_DIR / "decomposition_system.txt")
         user = fill_prompt(
             load_prompt(PROMPTS_DIR / "decomposition_user.txt"),
             statement=statement_for_polarity(goal.statement, polarity),
+            this_formula_attempts=this_formula_attempts,
+            opposite_attempts=opposite_attempts,
         )
         answer = self.model.complete(
             [

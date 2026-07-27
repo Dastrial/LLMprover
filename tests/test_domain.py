@@ -13,6 +13,7 @@ from llmprover.domain import (
     Polarity,
     ProofAttempt,
     statement_for_polarity,
+    status_from_frontiers,
 )
 
 GOAL = Goal(name="plus_n0", statement="forall n : nat, n + 0 = n.")
@@ -24,10 +25,11 @@ def record(
     success: bool,
     polarity: Polarity = Polarity.Positive,
     error: str = "Error.",
+    goal: Goal = GOAL,
 ) -> AttemptRecord:
     return AttemptRecord(
         attempt=ProofAttempt(
-            goal=GOAL,
+            goal=goal,
             script=script,
             new_lemmas=[],
             polarity=polarity,
@@ -102,6 +104,33 @@ def test_proof_attempt_target_statement_follows_polarity() -> None:
     assert negative.target_statement == "~ (forall n : nat, n + 0 = n.)"
 
 
+# --- status_from_frontiers ---
+
+
+def test_status_from_frontiers_open_when_both_missing() -> None:
+    assert status_from_frontiers(None, None) is LemmaStatus.Open
+
+
+def test_status_from_frontiers_proved_prefers_positive() -> None:
+    assert (
+        status_from_frontiers(
+            record("reflexivity.", success=True),
+            record("intro H.", success=True, polarity=Polarity.Negative),
+        )
+        is LemmaStatus.Proved
+    )
+
+
+def test_status_from_frontiers_refuted_when_only_negative_succeeds() -> None:
+    assert (
+        status_from_frontiers(
+            record("auto.", success=False),
+            record("intro H.", success=True, polarity=Polarity.Negative),
+        )
+        is LemmaStatus.Refuted
+    )
+
+
 # --- LemmaNode ---
 
 
@@ -147,14 +176,15 @@ def test_lemma_node_status_refuted_when_latest_negative_succeeds() -> None:
     assert node.status is LemmaStatus.Refuted
 
 
-def test_lemma_node_status_open_when_latest_positive_fails_after_earlier_success() -> (
-    None
-):
-    """Status follows the frontier (latest attempt), not any past success."""
+def test_lemma_node_status_refuted_after_failed_positives_and_mixed_negatives() -> None:
     node = LemmaNode(goal=GOAL)
-    node.append(record("reflexivity.", success=True))
-    node.append(record("fail.", success=False))
-    assert node.status is LemmaStatus.Open
+    node.append(record("auto.", success=False))
+    node.append(record("induction n.", success=False))
+    node.append(record("intro H.", success=False, polarity=Polarity.Negative))
+    node.append(
+        record("intro H. contradiction.", success=True, polarity=Polarity.Negative)
+    )
+    assert node.status is LemmaStatus.Refuted
 
 
 def test_lemma_node_append_rejects_mismatched_goal() -> None:
@@ -172,3 +202,153 @@ def test_lemma_node_append_rejects_mismatched_goal() -> None:
     assert str(exc_info.value) == (
         f"Attempt goal {other.attempt.goal!r} does not match lemma node goal {GOAL!r}"
     )
+
+
+def test_attempt_record_can_nest_child_lemma_nodes() -> None:
+    helper = Goal(name="helper", statement="True.")
+    child = LemmaNode(goal=helper)
+    child.append(record("exact I.", success=True, goal=helper))
+
+    parent = AttemptRecord(
+        attempt=ProofAttempt(
+            goal=GOAL,
+            script="apply helper.",
+            new_lemmas=[helper],
+        ),
+        rocq_error=CoqcResult(success=False, stderr="Error."),
+        lemmas=[child],
+    )
+
+    assert parent.lemmas[0].status is LemmaStatus.Proved
+    assert parent.lemmas[0].goal == helper
+    assert parent.fully_succeeded is False
+
+
+def test_lemma_node_status_open_when_coqc_ok_but_child_still_open() -> None:
+    helper = Goal(name="helper", statement="True.")
+    child = LemmaNode(goal=helper)
+    node = LemmaNode(goal=GOAL)
+    node.append(
+        AttemptRecord(
+            attempt=ProofAttempt(
+                goal=GOAL,
+                script="apply helper.",
+                new_lemmas=[helper],
+            ),
+            rocq_error=CoqcResult(success=True),
+            lemmas=[child],
+        )
+    )
+    assert child.status is LemmaStatus.Open
+    assert node.status is LemmaStatus.Open
+
+
+def test_lemma_node_status_proved_when_coqc_ok_and_children_proved() -> None:
+    helper = Goal(name="helper", statement="True.")
+    child = LemmaNode(goal=helper)
+    child.append(record("exact I.", success=True, goal=helper))
+    node = LemmaNode(goal=GOAL)
+    node.append(
+        AttemptRecord(
+            attempt=ProofAttempt(
+                goal=GOAL,
+                script="apply helper.",
+                new_lemmas=[helper],
+            ),
+            rocq_error=CoqcResult(success=True),
+            lemmas=[child],
+        )
+    )
+    assert child.status is LemmaStatus.Proved
+    assert node.status is LemmaStatus.Proved
+
+
+def test_lemma_node_status_open_when_coqc_ok_but_one_child_refuted() -> None:
+    proved = Goal(name="ok", statement="True.")
+    refuted = Goal(name="bad", statement="False.")
+    proved_child = LemmaNode(goal=proved)
+    proved_child.append(record("exact I.", success=True, goal=proved))
+    refuted_child = LemmaNode(goal=refuted)
+    refuted_child.append(
+        record("intro H.", success=True, polarity=Polarity.Negative, goal=refuted)
+    )
+    node = LemmaNode(goal=GOAL)
+    node.append(
+        AttemptRecord(
+            attempt=ProofAttempt(
+                goal=GOAL,
+                script="apply ok. apply bad.",
+                new_lemmas=[proved, refuted],
+            ),
+            rocq_error=CoqcResult(success=True),
+            lemmas=[proved_child, refuted_child],
+        )
+    )
+    assert proved_child.status is LemmaStatus.Proved
+    assert refuted_child.status is LemmaStatus.Refuted
+    assert node.status is LemmaStatus.Open
+
+
+def test_lemma_node_status_open_when_coqc_fails_and_one_child_refuted() -> None:
+    proved = Goal(name="ok", statement="True.")
+    refuted = Goal(name="bad", statement="False.")
+    proved_child = LemmaNode(goal=proved)
+    proved_child.append(record("exact I.", success=True, goal=proved))
+    refuted_child = LemmaNode(goal=refuted)
+    refuted_child.append(
+        record("intro H.", success=True, polarity=Polarity.Negative, goal=refuted)
+    )
+    node = LemmaNode(goal=GOAL)
+    node.append(
+        AttemptRecord(
+            attempt=ProofAttempt(
+                goal=GOAL,
+                script="apply ok. apply bad.",
+                new_lemmas=[proved, refuted],
+            ),
+            rocq_error=CoqcResult(success=False, stderr="Error."),
+            lemmas=[proved_child, refuted_child],
+        )
+    )
+    assert proved_child.status is LemmaStatus.Proved
+    assert refuted_child.status is LemmaStatus.Refuted
+    assert node.status is LemmaStatus.Open
+
+
+def test_lemma_node_status_open_when_negative_coqc_ok_but_child_open() -> None:
+    helper = Goal(name="helper", statement="False.")
+    child = LemmaNode(goal=helper)
+    node = LemmaNode(goal=GOAL)
+    node.append(
+        AttemptRecord(
+            attempt=ProofAttempt(
+                goal=GOAL,
+                polarity=Polarity.Negative,
+                script="apply helper.",
+                new_lemmas=[helper],
+            ),
+            rocq_error=CoqcResult(success=True),
+            lemmas=[child],
+        )
+    )
+    assert node.status is LemmaStatus.Open
+
+
+def test_lemma_node_status_refuted_when_negative_coqc_ok_and_children_proved() -> None:
+    helper = Goal(name="helper", statement="False.")
+    child = LemmaNode(goal=helper)
+    child.append(record("exact I.", success=True, goal=helper))
+    node = LemmaNode(goal=GOAL)
+    node.append(
+        AttemptRecord(
+            attempt=ProofAttempt(
+                goal=GOAL,
+                polarity=Polarity.Negative,
+                script="apply helper.",
+                new_lemmas=[helper],
+            ),
+            rocq_error=CoqcResult(success=True),
+            lemmas=[child],
+        )
+    )
+    assert node.status is LemmaStatus.Refuted

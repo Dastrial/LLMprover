@@ -89,11 +89,48 @@ class ProofAttempt:
 
 @dataclass
 class AttemptRecord:
-    """A checked proof attempt, with Rocq outcome and optional child searches."""
+    """A checked proof attempt, with Rocq outcome and optional child searches.
+
+    ``lemmas`` holds a ``LemmaNode`` per helper introduced by decomposition
+    (nested search state for each child goal).
+    """
 
     attempt: ProofAttempt
     rocq_error: CoqcResult
-    lemmas_attempts: list[list[AttemptRecord]] = field(default_factory=list)
+    lemmas: list[LemmaNode] = field(default_factory=list)
+
+    @property
+    def fully_succeeded(self) -> bool:
+        """Whether this attempt is a complete success.
+
+        Requires a successful ``coqc`` run and every child lemma to be
+        ``Proved``. Child status is recursive (nested ``LemmaNode`` trees);
+        the search tree must stay acyclic.
+        """
+        if not self.rocq_error.success:
+            return False
+        return all(lemma.status is LemmaStatus.Proved for lemma in self.lemmas)
+
+
+def status_from_frontiers(
+    latest_positive: AttemptRecord | None,
+    latest_negative: AttemptRecord | None,
+) -> LemmaStatus:
+    """Derive lemma status from the latest attempt of each polarity.
+
+    For now we only look at the frontier (last attempt) of each polarity —
+    simpler and enough in practice, since we normally stop once a polarity
+    succeeds. Checking whether *any* past attempt succeeded might be more
+    robust later.
+
+    A frontier attempt only counts if ``fully_succeeded`` (coqc ok and all
+    child lemmas proved), so status walks the nested lemma tree.
+    """
+    if latest_positive is not None and latest_positive.fully_succeeded:
+        return LemmaStatus.Proved
+    if latest_negative is not None and latest_negative.fully_succeeded:
+        return LemmaStatus.Refuted
+    return LemmaStatus.Open
 
 
 @dataclass
@@ -101,7 +138,9 @@ class LemmaNode:
     """Search state for one lemma: canonical goal plus dual attempt histories.
 
     Positive and negative attempts share the same ``goal`` (``P``). Status is
-    derived from the latest attempt of each polarity (search frontier).
+    derived from the latest attempt of each polarity (search frontier), and
+    only once that attempt's child lemmas are themselves proved.
+    Child searches live on ``AttemptRecord.lemmas`` as nested ``LemmaNode``s.
     """
 
     goal: Goal
@@ -128,10 +167,7 @@ class LemmaNode:
 
     @property
     def status(self) -> LemmaStatus:
-        latest_positive = self.frontier(Polarity.Positive)
-        if latest_positive is not None and latest_positive.rocq_error.success:
-            return LemmaStatus.Proved
-        latest_negative = self.frontier(Polarity.Negative)
-        if latest_negative is not None and latest_negative.rocq_error.success:
-            return LemmaStatus.Refuted
-        return LemmaStatus.Open
+        return status_from_frontiers(
+            self.frontier(Polarity.Positive),
+            self.frontier(Polarity.Negative),
+        )

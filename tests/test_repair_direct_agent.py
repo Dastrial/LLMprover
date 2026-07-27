@@ -32,14 +32,16 @@ def attempt_record(
     polarity: Polarity = Polarity.Positive,
     new_lemmas: list[Goal] | None = None,
 ) -> AttemptRecord:
+    goals = new_lemmas or []
     return AttemptRecord(
         attempt=ProofAttempt(
             goal=GOAL,
             polarity=polarity,
             script=script,
-            new_lemmas=new_lemmas or [],
+            new_lemmas=goals,
         ),
         rocq_error=CoqcResult(success=False, stderr=error),
+        lemmas=[LemmaNode(goal=goal) for goal in goals],
     )
 
 
@@ -70,20 +72,29 @@ def test_format_histories_formats_both_polarities() -> None:
 
     assert positive_text == (
         "Attempt 1:\n"
+        "\n"
         "Statement: forall n : nat, n + 0 = n.\n"
+        "\n"
         "Script: induction n.\n"
+        "\n"
         "Rocq errors: Error on line 1.\n"
         "\n"
         "Attempt 2:\n"
+        "\n"
         "Statement: forall n : nat, n + 0 = n.\n"
+        "\n"
         "Script: auto.\n"
+        "\n"
         "Rocq errors: Unable to unify.\n"
         "\n"
     )
     assert negative_text == (
         "Attempt 1:\n"
+        "\n"
         "Statement: ~ (forall n : nat, n + 0 = n.)\n"
+        "\n"
         "Script: intro H.\n"
+        "\n"
         "Rocq errors: Error B.\n"
         "\n"
     )
@@ -106,8 +117,11 @@ def test_format_histories_skips_decomposition_attempts() -> None:
 
     assert positive_text == (
         "Attempt 1:\n"
+        "\n"
         "Statement: forall n : nat, n + 0 = n.\n"
+        "\n"
         "Script: reflexivity.\n"
+        "\n"
         "Rocq errors: Still failing.\n"
         "\n"
     )
@@ -132,15 +146,21 @@ def test_prove_positive_keeps_histories_in_order() -> None:
     )
     positive_attempts = (
         "Attempt 1:\n"
+        "\n"
         "Statement: forall n : nat, n + 0 = n.\n"
+        "\n"
         "Script: induction n.\n"
+        "\n"
         "Rocq errors: Error on line 1.\n"
         "\n"
     )
     negative_attempts = (
         "Attempt 1:\n"
+        "\n"
         "Statement: ~ (forall n : nat, n + 0 = n.)\n"
+        "\n"
         "Script: intro H.\n"
+        "\n"
         "Rocq errors: Error B.\n"
         "\n"
     )
@@ -176,15 +196,21 @@ def test_prove_negative_swaps_histories_in_prompt() -> None:
     )
     positive_attempts = (
         "Attempt 1:\n"
+        "\n"
         "Statement: forall n : nat, n + 0 = n.\n"
+        "\n"
         "Script: induction n.\n"
+        "\n"
         "Rocq errors: Error on line 1.\n"
         "\n"
     )
     negative_attempts = (
         "Attempt 1:\n"
+        "\n"
         "Statement: ~ (forall n : nat, n + 0 = n.)\n"
+        "\n"
         "Script: intro H.\n"
+        "\n"
         "Rocq errors: Error B.\n"
         "\n"
     )

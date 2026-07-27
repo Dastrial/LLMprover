@@ -2,6 +2,24 @@ Decompose the following formula into simpler helper lemmas, then write the tacti
 
 Statement: {statement}
 
+Previous failed attempts are shown below (direct proofs and decompositions, both polarities).
+Each attempt uses blank lines between top-level fields; helper lemmas are indented:
+Attempt N:
+
+Statement: <formula that was attacked>
+
+Helper lemmas:
+  LemmaName [status]: statement
+  (present only for decomposition attempts; status is open, proved, or refuted)
+
+Script: <tactics that were tried>
+
+Rocq errors: <coqc output>
+
+=== Failed attempts on this formula ===
+{this_formula_attempts}
+=== Failed attempts on the opposite polarity ===
+{opposite_attempts}
 Output format:
 1. One helper lemma per line, as LemmaName: statement.
 2. A blank line.
@@ -9,3 +27,4 @@ Output format:
 
 Do not include Proof., Qed., Lemma, Require Import, admit/Admitted, markdown fences, comments, or explanations.
 When possible, keep lines under 80 characters.
+Use previous attempts to avoid repeating the same failed decompositions or scripts.

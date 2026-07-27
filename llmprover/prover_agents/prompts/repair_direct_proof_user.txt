@@ -2,9 +2,20 @@ Write the Rocq proof body for the following formula.
 
 Statement: {statement}
 
+Previous failed attempts are shown below.
+Each attempt uses blank lines between fields:
+Attempt N:
+
+Statement: <formula that was attacked>
+
+Script: <tactics that were tried>
+
+Rocq errors: <coqc output>
+
 === Failed attempts on this formula ===
 {this_formula_attempts}
 === Failed attempts on the opposite polarity ===
 {opposite_attempts}
 Output only tactics between Proof. and Qed.
 When possible, keep lines under 80 characters.
+Use previous attempts to avoid repeating the same failed scripts.
