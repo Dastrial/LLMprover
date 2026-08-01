@@ -1,0 +1,34 @@
+Choose the next prover agent and LLM model for this formula.
+
+Statement: {statement}
+
+=== Available agents (id: description) ===
+{agent_specs}
+
+=== Available models (id: description) ===
+{model_specs}
+
+Previous failed attempts are shown below (both polarities).
+Each attempt uses blank lines between top-level fields; helper lemmas are indented:
+Attempt N:
+
+Statement: <formula that was attacked>
+
+Helper lemmas:
+  LemmaName [status]: statement
+  (present only for decomposition attempts; status is open, proved, or refuted)
+
+Script: <tactics that were tried>
+
+Rocq errors: <coqc output>
+
+=== Failed attempts on this formula ===
+{this_formula_attempts}
+=== Failed attempts on the opposite polarity ===
+{opposite_attempts}
+
+Output exactly two lines:
+1. agent id
+2. model id
+
+No markdown fences, comments, or explanations.

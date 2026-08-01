@@ -25,4 +25,4 @@ where = ["."]
 include = ["llmprover*"]
 
 [tool.setuptools.package-data]
-llmprover = ["prover_agents/prompts/*.txt"]
+llmprover = ["prover_agents/prompts/*.txt", "prompts/*.txt"]
