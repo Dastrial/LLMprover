@@ -69,7 +69,7 @@ def test_coqc_result_str() -> None:
     assert str_result == "CoqcResult(success=False, stdout=line1, stderr=line2)"
 
 
-# --- Polarity / statement_for_polarity ---
+# --- Polarity / statement_for_polarity / Position ---
 
 
 def test_statement_for_polarity_positive_keeps_statement() -> None:

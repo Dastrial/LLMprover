@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import TypeAlias
 
 
 class Polarity(Enum):
@@ -11,6 +12,10 @@ class Polarity(Enum):
 
     Positive = "positive"
     Negative = "negative"
+
+
+PositionStep: TypeAlias = tuple[Polarity, int]
+Position: TypeAlias = tuple[PositionStep, ...]
 
 
 class LemmaStatus(Enum):
@@ -171,3 +176,11 @@ class LemmaNode:
             self.frontier(Polarity.Positive),
             self.frontier(Polarity.Negative),
         )
+
+    def from_position(self, position: Position) -> LemmaNode:
+        if not position:
+            return self
+        polarity, index = position[0]
+        if polarity is Polarity.Positive:
+            return self.positive[-1].lemmas[index].from_position(position[1:])
+        return self.negative[-1].lemmas[index].from_position(position[1:])
