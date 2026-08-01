@@ -4,11 +4,34 @@ from __future__ import annotations
 
 import os
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Self
 
 from anthropic import Anthropic
 from mistralai.client import Mistral
 from openai import OpenAI
+
+
+@dataclass(frozen=True)
+class TokenUsage:
+    """Token counts for one or more LLM calls."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+    def __add__(self, other: TokenUsage) -> TokenUsage:
+        return TokenUsage(
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+        )
+
+
+@dataclass(frozen=True)
+class CompletionResult:
+    """Assistant text plus token usage for a single completion."""
+
+    text: str
+    usage: TokenUsage = TokenUsage()
 
 
 class LLMClient(ABC):
@@ -38,8 +61,18 @@ class LLMClient(ABC):
         return cls.from_api_key(api_key, model=model)
 
     @abstractmethod
-    def complete(self, messages: list[dict[str, str]]) -> str:
-        """Run a chat completion and return the assistant text."""
+    def complete(self, messages: list[dict[str, str]]) -> CompletionResult:
+        """Run a chat completion and return text plus token usage."""
+
+
+def _openai_style_usage(response: object) -> TokenUsage:
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return TokenUsage()
+    return TokenUsage(
+        input_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+        output_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+    )
 
 
 class OpenAIClient(LLMClient):
@@ -56,12 +89,15 @@ class OpenAIClient(LLMClient):
     def from_api_key(cls, api_key: str, *, model: str | None = None) -> OpenAIClient:
         return cls(model=model or cls.DEFAULT_MODEL, client=OpenAI(api_key=api_key))
 
-    def complete(self, messages: list[dict[str, str]]) -> str:
+    def complete(self, messages: list[dict[str, str]]) -> CompletionResult:
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
         )
-        return response.choices[0].message.content or ""
+        return CompletionResult(
+            text=response.choices[0].message.content or "",
+            usage=_openai_style_usage(response),
+        )
 
 
 class MistralAIClient(LLMClient):
@@ -81,12 +117,15 @@ class MistralAIClient(LLMClient):
             client=Mistral(api_key=api_key),
         )
 
-    def complete(self, messages: list[dict[str, str]]) -> str:
+    def complete(self, messages: list[dict[str, str]]) -> CompletionResult:
         response = self.client.chat.complete(
             model=self.model,
             messages=messages,
         )
-        return response.choices[0].message.content or ""
+        return CompletionResult(
+            text=response.choices[0].message.content or "",
+            usage=_openai_style_usage(response),
+        )
 
 
 class AnthropicClient(LLMClient):
@@ -103,7 +142,7 @@ class AnthropicClient(LLMClient):
     def from_api_key(cls, api_key: str, *, model: str | None = None) -> AnthropicClient:
         return cls(model=model or cls.DEFAULT_MODEL, client=Anthropic(api_key=api_key))
 
-    def complete(self, messages: list[dict[str, str]]) -> str:
+    def complete(self, messages: list[dict[str, str]]) -> CompletionResult:
         system_parts: list[str] = []
         api_messages: list[dict[str, str]] = []
         for message in messages:
@@ -126,4 +165,12 @@ class AnthropicClient(LLMClient):
         for block in response.content:
             if block.type == "text":
                 parts.append(block.text)
-        return "".join(parts)
+
+        usage = getattr(response, "usage", None)
+        token_usage = TokenUsage()
+        if usage is not None:
+            token_usage = TokenUsage(
+                input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
+                output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
+            )
+        return CompletionResult(text="".join(parts), usage=token_usage)

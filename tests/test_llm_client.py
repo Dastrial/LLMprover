@@ -6,7 +6,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from llmprover.llm_client import AnthropicClient, MistralAIClient, OpenAIClient
+from llmprover.llm_client import (
+    AnthropicClient,
+    CompletionResult,
+    MistralAIClient,
+    OpenAIClient,
+    TokenUsage,
+)
 
 USER_MESSAGE = [{"role": "user", "content": "Hello"}]
 SYSTEM_AND_USER = [
@@ -22,10 +28,15 @@ def test_openai_complete_returns_assistant_text() -> None:
     mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.choices[0].message.content = "Hi there"
+    mock_response.usage.prompt_tokens = 10
+    mock_response.usage.completion_tokens = 4
     mock_client.chat.completions.create.return_value = mock_response
 
     client = OpenAIClient(model="gpt-4o", client=mock_client)
-    assert client.complete(USER_MESSAGE) == "Hi there"
+    result = client.complete(USER_MESSAGE)
+    assert result == CompletionResult(
+        text="Hi there", usage=TokenUsage(input_tokens=10, output_tokens=4)
+    )
     mock_client.chat.completions.create.assert_called_once_with(
         model="gpt-4o",
         messages=USER_MESSAGE,
@@ -36,10 +47,11 @@ def test_openai_complete_returns_empty_string_when_content_is_none() -> None:
     mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.choices[0].message.content = None
+    mock_response.usage = None
     mock_client.chat.completions.create.return_value = mock_response
 
     openai_client = OpenAIClient(model="gpt-4o", client=mock_client)
-    assert openai_client.complete(USER_MESSAGE) == ""
+    assert openai_client.complete(USER_MESSAGE) == CompletionResult(text="")
 
 
 @patch("llmprover.llm_client.OpenAI")
@@ -107,10 +119,14 @@ def test_mistral_complete_returns_assistant_text() -> None:
     mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.choices[0].message.content = "Bonjour"
+    mock_response.usage.prompt_tokens = 7
+    mock_response.usage.completion_tokens = 2
     mock_client.chat.complete.return_value = mock_response
 
     mistral_client = MistralAIClient(model="mistral-large-latest", client=mock_client)
-    assert mistral_client.complete(USER_MESSAGE) == "Bonjour"
+    assert mistral_client.complete(USER_MESSAGE) == CompletionResult(
+        text="Bonjour", usage=TokenUsage(input_tokens=7, output_tokens=2)
+    )
     mock_client.chat.complete.assert_called_once_with(
         model="mistral-large-latest",
         messages=USER_MESSAGE,
@@ -151,7 +167,9 @@ def test_mistral_from_env_raises_when_key_missing(
 
 @patch("llmprover.llm_client.Mistral")
 def test_mistral_from_api_key_accepts_custom_model(mock_mistral_cls: MagicMock) -> None:
-    mistral_client = MistralAIClient.from_api_key("mistral-key", model="mistral-small-latest")
+    mistral_client = MistralAIClient.from_api_key(
+        "mistral-key", model="mistral-small-latest"
+    )
     assert mistral_client.model == "mistral-small-latest"
 
 
@@ -187,11 +205,15 @@ def test_anthropic_complete_splits_system_messages_and_keeps_user_messages() -> 
     tool_block.type = "tool_use"
     mock_response = MagicMock()
     mock_response.content = [text_block, tool_block]
+    mock_response.usage.input_tokens = 12
+    mock_response.usage.output_tokens = 3
     mock_client.messages.create.return_value = mock_response
 
     model = "claude-sonnet-4-20250514"
     anthropic_client = AnthropicClient(model=model, client=mock_client)
-    assert anthropic_client.complete(SYSTEM_AND_USER) == "Response text"
+    assert anthropic_client.complete(SYSTEM_AND_USER) == CompletionResult(
+        text="Response text", usage=TokenUsage(input_tokens=12, output_tokens=3)
+    )
     mock_client.messages.create.assert_called_once_with(
         model=model,
         messages=USER_MESSAGE,
@@ -214,7 +236,9 @@ def test_anthropic_complete_joins_multiple_system_messages() -> None:
         {"role": "system", "content": "Part 2"},
         {"role": "user", "content": "Hi"},
     ]
-    anthropic_client = AnthropicClient(model=AnthropicClient.DEFAULT_MODEL, client=mock_client)
+    anthropic_client = AnthropicClient(
+        model=AnthropicClient.DEFAULT_MODEL, client=mock_client
+    )
     anthropic_client.complete(messages)
 
     kwargs = mock_client.messages.create.call_args.kwargs
@@ -231,7 +255,9 @@ def test_anthropic_complete_omits_system_when_none() -> None:
     mock_response.content = [text_block]
     mock_client.messages.create.return_value = mock_response
 
-    anthropic_client = AnthropicClient(model=AnthropicClient.DEFAULT_MODEL, client=mock_client)
+    anthropic_client = AnthropicClient(
+        model=AnthropicClient.DEFAULT_MODEL, client=mock_client
+    )
     anthropic_client.complete(USER_MESSAGE)
 
     kwargs = mock_client.messages.create.call_args.kwargs

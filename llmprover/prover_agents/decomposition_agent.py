@@ -11,17 +11,16 @@ from llmprover.domain import (
     ProofAttempt,
     statement_for_polarity,
 )
-from llmprover.llm_client import LLMClient
+from llmprover.llm_client import LLMClient, TokenUsage
 from llmprover.prompts import fill_prompt, load_prompt
 from llmprover.prover_agents.prover_agent import ProverAgent
-from llmprover.prover_agents.utils import (
-    format_attempts,
+from llmprover.utils import (
+    format_histories,
     strip_markdown_fences,
     strip_proof_wrappers,
 )
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
-EMPTY_ATTEMPTS = "No previous attempts.\n"
 
 
 def parse_decomposition_answer(answer: str) -> tuple[list[Goal], str]:
@@ -64,16 +63,11 @@ class DecompositionAgent(ProverAgent):
     def __init__(self, model: LLMClient) -> None:
         self.model = model
 
-    @staticmethod
-    def format_histories(node: LemmaNode) -> tuple[str, str]:
-        return (
-            format_attempts(node.positive, empty=EMPTY_ATTEMPTS),
-            format_attempts(node.negative, empty=EMPTY_ATTEMPTS),
-        )
-
-    def prove(self, node: LemmaNode, polarity: Polarity) -> ProofAttempt:
+    def prove(
+        self, node: LemmaNode, polarity: Polarity
+    ) -> tuple[ProofAttempt, TokenUsage]:
         goal = node.goal
-        this_formula_attempts, opposite_attempts = self.format_histories(node)
+        this_formula_attempts, opposite_attempts = format_histories(node)
         if polarity is Polarity.Negative:
             this_formula_attempts, opposite_attempts = (
                 opposite_attempts,
@@ -86,16 +80,19 @@ class DecompositionAgent(ProverAgent):
             this_formula_attempts=this_formula_attempts,
             opposite_attempts=opposite_attempts,
         )
-        answer = self.model.complete(
+        completion = self.model.complete(
             [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ]
         )
-        new_lemmas, script = parse_decomposition_answer(answer)
-        return ProofAttempt(
-            goal=goal,
-            polarity=polarity,
-            script=script,
-            new_lemmas=new_lemmas,
+        new_lemmas, script = parse_decomposition_answer(completion.text)
+        return (
+            ProofAttempt(
+                goal=goal,
+                polarity=polarity,
+                script=script,
+                new_lemmas=new_lemmas,
+            ),
+            completion.usage,
         )

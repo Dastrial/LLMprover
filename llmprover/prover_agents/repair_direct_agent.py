@@ -11,10 +11,10 @@ from llmprover.domain import (
     ProofAttempt,
     statement_for_polarity,
 )
-from llmprover.llm_client import LLMClient
+from llmprover.llm_client import LLMClient, TokenUsage
 from llmprover.prompts import fill_prompt, load_prompt
 from llmprover.prover_agents.prover_agent import ProverAgent
-from llmprover.prover_agents.utils import format_attempts, parse_proof_script
+from llmprover.utils import format_attempts, parse_proof_script
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 EMPTY_ATTEMPTS = "No previous attempts.\n"
@@ -54,7 +54,9 @@ class RepairDirectAgent(ProverAgent):
             ),
         )
 
-    def prove(self, node: LemmaNode, polarity: Polarity) -> ProofAttempt:
+    def prove(
+        self, node: LemmaNode, polarity: Polarity
+    ) -> tuple[ProofAttempt, TokenUsage]:
         goal = node.goal
         this_formula_attempts, opposite_attempts = self.format_histories(node)
         if polarity is Polarity.Negative:
@@ -69,17 +71,19 @@ class RepairDirectAgent(ProverAgent):
             this_formula_attempts=this_formula_attempts,
             opposite_attempts=opposite_attempts,
         )
-        script = parse_proof_script(
-            self.model.complete(
-                [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ]
-            )
+        completion = self.model.complete(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ]
         )
-        return ProofAttempt(
-            goal=goal,
-            polarity=polarity,
-            script=script,
-            new_lemmas=[],
+        script = parse_proof_script(completion.text)
+        return (
+            ProofAttempt(
+                goal=goal,
+                polarity=polarity,
+                script=script,
+                new_lemmas=[],
+            ),
+            completion.usage,
         )

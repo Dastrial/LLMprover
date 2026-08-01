@@ -16,6 +16,7 @@ from llmprover.domain import (
     ProofAttempt,
     statement_for_polarity,
 )
+from llmprover.llm_client import CompletionResult, TokenUsage
 from llmprover.prompts import fill_prompt, load_prompt
 from llmprover.prover_agents.decomposition_agent import (
     DecompositionAgent,
@@ -108,68 +109,11 @@ def test_parse_decomposition_answer_raises_when_lemma_is_incomplete() -> None:
     assert str(exc_info.value) == "No statement or name found in lemma script"
 
 
-def test_format_histories_includes_direct_and_decomposition_attempts() -> None:
-    node = LemmaNode(
-        goal=GOAL,
-        positive=[
-            attempt_record("induction n.", "Error on line 1."),
-            attempt_record(
-                "apply helper.",
-                "Error on helper.",
-                new_lemmas=[Goal(name="helper", statement="True.")],
-            ),
-        ],
-        negative=[attempt_record("intro H.", "Error B.", polarity=Polarity.Negative)],
-    )
-
-    positive_text, negative_text = DecompositionAgent.format_histories(node)
-
-    assert positive_text == (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: forall n : nat, n + 0 = n.\n"
-        "\n"
-        "Script: induction n.\n"
-        "\n"
-        "Rocq errors: Error on line 1.\n"
-        "\n"
-        "Attempt 2:\n"
-        "\n"
-        "Statement: forall n : nat, n + 0 = n.\n"
-        "\n"
-        "Helper lemmas:\n"
-        "  helper [open]: True.\n"
-        "\n"
-        "Script: apply helper.\n"
-        "\n"
-        "Rocq errors: Error on helper.\n"
-        "\n"
-    )
-    assert negative_text == (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: ~ (forall n : nat, n + 0 = n.)\n"
-        "\n"
-        "Script: intro H.\n"
-        "\n"
-        "Rocq errors: Error B.\n"
-        "\n"
-    )
-
-
-def test_format_histories_returns_placeholders_when_empty() -> None:
-    positive_text, negative_text = DecompositionAgent.format_histories(
-        LemmaNode(goal=GOAL)
-    )
-    assert positive_text == EMPTY
-    assert negative_text == EMPTY
-
-
 def test_prove_returns_lemmas_and_script_from_llm_output() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = "helper: True.\n\napply helper."
+    mock_model.complete.return_value = CompletionResult(text="helper: True.\n\napply helper.", usage=TokenUsage(3, 5))
 
-    attempt = DecompositionAgent(mock_model).prove(NODE, Polarity.Positive)
+    attempt, usage = DecompositionAgent(mock_model).prove(NODE, Polarity.Positive)
 
     assert attempt == ProofAttempt(
         goal=GOAL,
@@ -177,6 +121,7 @@ def test_prove_returns_lemmas_and_script_from_llm_output() -> None:
         script="apply helper.",
         new_lemmas=[Goal(name="helper", statement="True.")],
     )
+    assert usage == TokenUsage(3, 5)
     mock_model.complete.assert_called_once_with(
         [
             {"role": "system", "content": EXPECTED_SYSTEM},
@@ -187,9 +132,9 @@ def test_prove_returns_lemmas_and_script_from_llm_output() -> None:
 
 def test_prove_negative_polarity_uses_negated_statement_in_prompt() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = "helper: False.\n\napply helper."
+    mock_model.complete.return_value = CompletionResult(text="helper: False.\n\napply helper.", usage=TokenUsage(3, 5))
 
-    attempt = DecompositionAgent(mock_model).prove(NODE, Polarity.Negative)
+    attempt, usage = DecompositionAgent(mock_model).prove(NODE, Polarity.Negative)
 
     assert attempt == ProofAttempt(
         goal=GOAL,
@@ -197,6 +142,7 @@ def test_prove_negative_polarity_uses_negated_statement_in_prompt() -> None:
         script="apply helper.",
         new_lemmas=[Goal(name="helper", statement="False.")],
     )
+    assert usage == TokenUsage(3, 5)
     mock_model.complete.assert_called_once_with(
         [
             {"role": "system", "content": EXPECTED_SYSTEM},
@@ -207,7 +153,7 @@ def test_prove_negative_polarity_uses_negated_statement_in_prompt() -> None:
 
 def test_prove_positive_keeps_histories_in_order() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = "helper: True.\n\napply helper."
+    mock_model.complete.return_value = CompletionResult(text="helper: True.\n\napply helper.", usage=TokenUsage(3, 5))
     node = LemmaNode(
         goal=GOAL,
         positive=[
@@ -252,7 +198,7 @@ def test_prove_positive_keeps_histories_in_order() -> None:
         "\n"
     )
 
-    attempt = DecompositionAgent(mock_model).prove(node, Polarity.Positive)
+    attempt, usage = DecompositionAgent(mock_model).prove(node, Polarity.Positive)
 
     assert attempt == ProofAttempt(
         goal=GOAL,
@@ -260,6 +206,7 @@ def test_prove_positive_keeps_histories_in_order() -> None:
         script="apply helper.",
         new_lemmas=[Goal(name="helper", statement="True.")],
     )
+    assert usage == TokenUsage(3, 5)
     mock_model.complete.assert_called_once_with(
         [
             {"role": "system", "content": EXPECTED_SYSTEM},
@@ -275,7 +222,7 @@ def test_prove_positive_keeps_histories_in_order() -> None:
 
 def test_prove_negative_swaps_histories_in_prompt() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = "helper: False.\n\napply helper."
+    mock_model.complete.return_value = CompletionResult(text="helper: False.\n\napply helper.", usage=TokenUsage(3, 5))
     node = LemmaNode(
         goal=GOAL,
         positive=[attempt_record("induction n.", "Error on line 1.")],
@@ -302,7 +249,7 @@ def test_prove_negative_swaps_histories_in_prompt() -> None:
         "\n"
     )
 
-    attempt = DecompositionAgent(mock_model).prove(node, Polarity.Negative)
+    attempt, usage = DecompositionAgent(mock_model).prove(node, Polarity.Negative)
 
     assert attempt == ProofAttempt(
         goal=GOAL,
@@ -310,6 +257,7 @@ def test_prove_negative_swaps_histories_in_prompt() -> None:
         script="apply helper.",
         new_lemmas=[Goal(name="helper", statement="False.")],
     )
+    assert usage == TokenUsage(3, 5)
     mock_model.complete.assert_called_once_with(
         [
             {"role": "system", "content": EXPECTED_SYSTEM},
@@ -327,11 +275,11 @@ def test_prove_negative_swaps_histories_in_prompt() -> None:
 
 def test_prove_normalizes_fenced_llm_output() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = (
+    mock_model.complete.return_value = CompletionResult(text=(
         "```\nhelper: True.\n\nProof.\napply helper.\nQed.\n```"
-    )
+    ), usage=TokenUsage(3, 5))
 
-    attempt = DecompositionAgent(mock_model).prove(NODE, Polarity.Positive)
+    attempt, usage = DecompositionAgent(mock_model).prove(NODE, Polarity.Positive)
 
     assert attempt == ProofAttempt(
         goal=GOAL,
@@ -339,11 +287,12 @@ def test_prove_normalizes_fenced_llm_output() -> None:
         script="apply helper.",
         new_lemmas=[Goal(name="helper", statement="True.")],
     )
+    assert usage == TokenUsage(3, 5)
 
 
 def test_prove_propagates_invalid_llm_output() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = "helper: True."
+    mock_model.complete.return_value = CompletionResult(text="helper: True.", usage=TokenUsage(3, 5))
 
     with pytest.raises(ValueError) as exc_info:
         DecompositionAgent(mock_model).prove(NODE, Polarity.Positive)

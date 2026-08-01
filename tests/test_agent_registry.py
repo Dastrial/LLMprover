@@ -8,6 +8,7 @@ import pytest
 
 from llmprover.agent_registry import AgentRegistry
 from llmprover.domain import LemmaNode, Polarity, ProofAttempt
+from llmprover.llm_client import TokenUsage
 from llmprover.prover_agents.prover_agent import ProverAgent
 
 
@@ -19,7 +20,9 @@ class StubAgentA(ProverAgent):
         StubAgentA.init_count += 1
         self.model = model
 
-    def prove(self, node: LemmaNode, polarity: Polarity) -> ProofAttempt:
+    def prove(
+        self, node: LemmaNode, polarity: Polarity
+    ) -> tuple[ProofAttempt, TokenUsage]:
         raise NotImplementedError
 
 
@@ -29,7 +32,9 @@ class StubAgentB(ProverAgent):
     def __init__(self, model: object) -> None:
         self.model = model
 
-    def prove(self, node: LemmaNode, polarity: Polarity) -> ProofAttempt:
+    def prove(
+        self, node: LemmaNode, polarity: Polarity
+    ) -> tuple[ProofAttempt, TokenUsage]:
         raise NotImplementedError
 
 

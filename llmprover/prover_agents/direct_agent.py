@@ -5,10 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from llmprover.domain import LemmaNode, Polarity, ProofAttempt, statement_for_polarity
-from llmprover.llm_client import LLMClient
+from llmprover.llm_client import LLMClient, TokenUsage
 from llmprover.prompts import fill_prompt, load_prompt
 from llmprover.prover_agents.prover_agent import ProverAgent
-from llmprover.prover_agents.utils import parse_proof_script
+from llmprover.utils import parse_proof_script
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
@@ -29,24 +29,28 @@ class DirectAgent(ProverAgent):
     def __init__(self, model: LLMClient) -> None:
         self.model = model
 
-    def prove(self, node: LemmaNode, polarity: Polarity) -> ProofAttempt:
+    def prove(
+        self, node: LemmaNode, polarity: Polarity
+    ) -> tuple[ProofAttempt, TokenUsage]:
         goal = node.goal
         system = load_prompt(PROMPTS_DIR / "direct_proof_system.txt")
         user = fill_prompt(
             load_prompt(PROMPTS_DIR / "direct_proof_user.txt"),
             statement=statement_for_polarity(goal.statement, polarity),
         )
-        script = parse_proof_script(
-            self.model.complete(
-                [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ]
-            )
+        completion = self.model.complete(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ]
         )
-        return ProofAttempt(
-            goal=goal,
-            polarity=polarity,
-            script=script,
-            new_lemmas=[],
+        script = parse_proof_script(completion.text)
+        return (
+            ProofAttempt(
+                goal=goal,
+                polarity=polarity,
+                script=script,
+                new_lemmas=[],
+            ),
+            completion.usage,
         )

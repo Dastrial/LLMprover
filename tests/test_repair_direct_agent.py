@@ -14,6 +14,7 @@ from llmprover.domain import (
     ProofAttempt,
     statement_for_polarity,
 )
+from llmprover.llm_client import CompletionResult, TokenUsage
 from llmprover.prompts import fill_prompt, load_prompt
 from llmprover.prover_agents.repair_direct_agent import RepairDirectAgent
 
@@ -138,7 +139,7 @@ def test_format_histories_returns_placeholders_when_empty() -> None:
 
 def test_prove_positive_keeps_histories_in_order() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = "reflexivity."
+    mock_model.complete.return_value = CompletionResult(text="reflexivity.", usage=TokenUsage(3, 5))
     node = LemmaNode(
         goal=GOAL,
         positive=[attempt_record("induction n.", "Error on line 1.")],
@@ -165,7 +166,7 @@ def test_prove_positive_keeps_histories_in_order() -> None:
         "\n"
     )
 
-    attempt = RepairDirectAgent(mock_model).prove(node, Polarity.Positive)
+    attempt, usage = RepairDirectAgent(mock_model).prove(node, Polarity.Positive)
 
     assert attempt == ProofAttempt(
         goal=GOAL,
@@ -173,6 +174,7 @@ def test_prove_positive_keeps_histories_in_order() -> None:
         script="reflexivity.",
         new_lemmas=[],
     )
+    assert usage == TokenUsage(3, 5)
     mock_model.complete.assert_called_once_with(
         [
             {"role": "system", "content": EXPECTED_SYSTEM},
@@ -188,7 +190,7 @@ def test_prove_positive_keeps_histories_in_order() -> None:
 
 def test_prove_negative_swaps_histories_in_prompt() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = "intro H. contradiction."
+    mock_model.complete.return_value = CompletionResult(text="intro H. contradiction.", usage=TokenUsage(3, 5))
     node = LemmaNode(
         goal=GOAL,
         positive=[attempt_record("induction n.", "Error on line 1.")],
@@ -215,7 +217,7 @@ def test_prove_negative_swaps_histories_in_prompt() -> None:
         "\n"
     )
 
-    attempt = RepairDirectAgent(mock_model).prove(node, Polarity.Negative)
+    attempt, usage = RepairDirectAgent(mock_model).prove(node, Polarity.Negative)
 
     assert attempt == ProofAttempt(
         goal=GOAL,
@@ -223,6 +225,7 @@ def test_prove_negative_swaps_histories_in_prompt() -> None:
         script="intro H. contradiction.",
         new_lemmas=[],
     )
+    assert usage == TokenUsage(3, 5)
     mock_model.complete.assert_called_once_with(
         [
             {"role": "system", "content": EXPECTED_SYSTEM},
@@ -240,9 +243,9 @@ def test_prove_negative_swaps_histories_in_prompt() -> None:
 
 def test_prove_strips_markdown_fences_from_llm_output() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = "```\napply H.\n```"
+    mock_model.complete.return_value = CompletionResult(text="```\napply H.\n```", usage=TokenUsage(3, 5))
 
-    attempt = RepairDirectAgent(mock_model).prove(
+    attempt, usage = RepairDirectAgent(mock_model).prove(
         LemmaNode(goal=GOAL), Polarity.Positive
     )
 
@@ -252,13 +255,14 @@ def test_prove_strips_markdown_fences_from_llm_output() -> None:
         script="apply H.",
         new_lemmas=[],
     )
+    assert usage == TokenUsage(3, 5)
 
 
 def test_prove_handles_empty_llm_response() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = ""
+    mock_model.complete.return_value = CompletionResult(text="", usage=TokenUsage(3, 5))
 
-    attempt = RepairDirectAgent(mock_model).prove(
+    attempt, usage = RepairDirectAgent(mock_model).prove(
         LemmaNode(goal=GOAL), Polarity.Positive
     )
 
@@ -268,3 +272,4 @@ def test_prove_handles_empty_llm_response() -> None:
         script="",
         new_lemmas=[],
     )
+    assert usage == TokenUsage(3, 5)
