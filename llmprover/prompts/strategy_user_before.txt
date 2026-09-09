@@ -1,0 +1,10 @@
+Choose the next prover agent and LLM model for this formula.
+
+Header (libraries, scopes, local definitions — already loaded):
+{header}
+
+=== Available agents (id: description) ===
+{agent_specs}
+
+=== Available models (id: description) ===
+{model_specs}
