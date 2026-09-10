@@ -1,0 +1,42 @@
+AUTHORIZED AUTOMATION
+
+The evaluator makes the following standard automation tactics available when
+checking generated proof scripts:
+
+lia
+nia
+lra
+nra
+ring
+ring_simplify
+field
+field_simplify
+auto
+eauto
+firstorder
+congruence
+
+You may freely use these tactics when mathematically appropriate even if their
+implementation modules are absent from the original theorem header.
+
+This permission grants use of these tactics only. It does NOT grant general
+access to additional library lemmas from the modules used internally to
+implement them.
+
+Other automation tactics that require imports absent from the original theorem
+header are not authorized.
+
+Prefer authorized automation when it can robustly solve routine:
+- arithmetic;
+- polynomial normalization;
+- field normalization;
+- elementary logical proof search;
+- congruence reasoning.
+
+In particular, when appropriate:
+- `lia` / `nia` for suitable integer or natural arithmetic;
+- `lra` / `nra` for suitable real or rational arithmetic;
+- `ring` / `ring_simplify` for polynomial normalization;
+- `field` / `field_simplify` for appropriate field expressions;
+- `auto` / `eauto` / `firstorder` / `congruence` for suitable routine logical
+  or structural reasoning.

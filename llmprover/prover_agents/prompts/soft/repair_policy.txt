@@ -1,0 +1,6 @@
+REPAIR POLICY
+
+Prefer repairing a promising prior direct attempt when the failure is local.
+If a substantially simpler fresh direct proof is clearly better, prefer it.
+Output only the Rocq tactic script as specified by the OUTPUT PROTOCOL.
+Do not emit decomposition output (HELPERS/SCRIPT).

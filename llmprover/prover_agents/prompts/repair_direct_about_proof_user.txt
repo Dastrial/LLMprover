@@ -1,0 +1,12 @@
+FINAL ANSWER turn: write the Rocq proof body for the following formula.
+
+Header (libraries, scopes, local definitions — already loaded; do not re-emit):
+{header}
+
+====== STATEMENT ======
+{statement}
+
+=== Rocq About results for candidate library lemmas ===
+{about_results}
+
+Output only tactics as specified by the system protocol.

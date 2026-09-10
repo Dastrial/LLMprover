@@ -14,15 +14,24 @@ from llmprover.domain import (
     ProofAttempt,
     statement_for_polarity,
 )
+from llmprover.history_presenter import DeterministicHistoryPresenter
 from llmprover.llm_client import CompletionResult, TokenUsage
-from llmprover.prompts import fill_prompt, load_prompt
+from llmprover.prompts import (
+    PromptMessage,
+    PromptPart,
+    fill_prompt,
+)
+from llmprover.prover_agents.prompt_assembly import (
+    REPAIR_DIRECT_SPEC,
+    cached_system_prompt,
+)
 from llmprover.prover_agents.repair_direct_agent import RepairDirectAgent
 
 PROMPTS_DIR = (
     Path(__file__).resolve().parent.parent / "llmprover" / "prover_agents" / "prompts"
 )
 GOAL = Goal(name="plus_n0", statement="forall n : nat, n + 0 = n.")
-EXPECTED_SYSTEM = load_prompt(PROMPTS_DIR / "direct_proof_system.txt")
+EXPECTED_SYSTEM = cached_system_prompt(REPAIR_DIRECT_SPEC)
 EMPTY = "No previous attempts.\n"
 
 
@@ -46,20 +55,46 @@ def attempt_record(
     )
 
 
-def expected_user(
+def expected_messages(
     polarity: Polarity,
-    this_formula_attempts: str,
-    opposite_attempts: str,
-) -> str:
-    return fill_prompt(
-        load_prompt(PROMPTS_DIR / "repair_direct_proof_user.txt"),
-        statement=statement_for_polarity(GOAL.statement, polarity),
-        this_formula_attempts=this_formula_attempts,
-        opposite_attempts=opposite_attempts,
+    node: LemmaNode | None = None,
+) -> list[PromptMessage]:
+    node = node or LemmaNode(goal=GOAL)
+    attempt_history, _ = DeterministicHistoryPresenter.repair().present_prompt_block(
+        node
     )
+    before = fill_prompt(
+        (PROMPTS_DIR / "repair_direct_proof_user_before.txt")
+        .read_text(encoding="utf-8")
+        .strip(),
+        header=GOAL.environment.header,
+    )
+    if not before.endswith("\n"):
+        before = f"{before}\n"
+    after = fill_prompt(
+        (PROMPTS_DIR / "repair_direct_proof_user_after.txt")
+        .read_text(encoding="utf-8")
+        .strip(),
+        statement=statement_for_polarity(GOAL.statement, polarity),
+    )
+    if after and not after.endswith("\n"):
+        after = f"{after}\n"
+    history = (
+        attempt_history if attempt_history.endswith("\n") else f"{attempt_history}\n"
+    )
+    return [
+        PromptMessage.text("system", EXPECTED_SYSTEM, cache_breakpoint=True),
+        PromptMessage(
+            role="user",
+            parts=(
+                PromptPart(before + history, cache_breakpoint=True),
+                PromptPart(after),
+            ),
+        ),
+    ]
 
 
-def test_format_histories_formats_both_polarities() -> None:
+def test_present_prompt_block_mixes_polarities() -> None:
     node = LemmaNode(
         goal=GOAL,
         positive=[
@@ -69,39 +104,16 @@ def test_format_histories_formats_both_polarities() -> None:
         negative=[attempt_record("intro H.", "Error B.", polarity=Polarity.Negative)],
     )
 
-    positive_text, negative_text = RepairDirectAgent.format_histories(node)
+    text, _ = DeterministicHistoryPresenter.repair().present_prompt_block(node)
 
-    assert positive_text == (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: forall n : nat, n + 0 = n.\n"
-        "\n"
-        "Script: induction n.\n"
-        "\n"
-        "Rocq errors: Error on line 1.\n"
-        "\n"
-        "Attempt 2:\n"
-        "\n"
-        "Statement: forall n : nat, n + 0 = n.\n"
-        "\n"
-        "Script: auto.\n"
-        "\n"
-        "Rocq errors: Unable to unify.\n"
-        "\n"
-    )
-    assert negative_text == (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: ~ (forall n : nat, n + 0 = n.)\n"
-        "\n"
-        "Script: intro H.\n"
-        "\n"
-        "Rocq errors: Error B.\n"
-        "\n"
-    )
+    assert "1 | induction n." in text
+    assert "1 | auto." in text
+    assert "1 | intro H." in text
+    assert text.index("induction n.") < text.index("intro H.")
+    assert "Attempt 3:" in text
 
 
-def test_format_histories_skips_decomposition_attempts() -> None:
+def test_present_prompt_block_skips_decomposition_attempts() -> None:
     node = LemmaNode(
         goal=GOAL,
         positive=[
@@ -114,56 +126,47 @@ def test_format_histories_skips_decomposition_attempts() -> None:
         ],
     )
 
-    positive_text, negative_text = RepairDirectAgent.format_histories(node)
+    text, _ = DeterministicHistoryPresenter.repair().present_prompt_block(node)
 
-    assert positive_text == (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: forall n : nat, n + 0 = n.\n"
-        "\n"
-        "Script: reflexivity.\n"
-        "\n"
-        "Rocq errors: Still failing.\n"
-        "\n"
+    assert "apply helper." not in text
+    assert "1 | reflexivity." in text
+    assert "Attempt 2:" not in text
+
+
+def test_present_prompt_block_omits_agent_description() -> None:
+    node = LemmaNode(
+        goal=GOAL,
+        positive=[
+            attempt_record(
+                "induction n.",
+                "Error on line 1.",
+            )
+        ],
     )
-    assert negative_text == EMPTY
+    node.positive[0].attempt.agent = "DirectAgent, model=gpt-4o-mini"
+
+    text, _ = DeterministicHistoryPresenter.repair().present_prompt_block(node)
+
+    assert "Agent:" not in text
+    assert "DirectAgent" not in text
 
 
-def test_format_histories_returns_placeholders_when_empty() -> None:
-    positive_text, negative_text = RepairDirectAgent.format_histories(
+def test_present_prompt_block_returns_placeholder_when_empty() -> None:
+    text, _ = DeterministicHistoryPresenter.repair().present_prompt_block(
         LemmaNode(goal=GOAL)
     )
-    assert positive_text == EMPTY
-    assert negative_text == EMPTY
+    assert text == EMPTY
 
 
-def test_prove_positive_keeps_histories_in_order() -> None:
+def test_prove_positive_includes_mixed_history() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = CompletionResult(text="reflexivity.", usage=TokenUsage(3, 5))
+    mock_model.complete.return_value = CompletionResult(
+        text="reflexivity.", usage=TokenUsage(3, 5)
+    )
     node = LemmaNode(
         goal=GOAL,
         positive=[attempt_record("induction n.", "Error on line 1.")],
         negative=[attempt_record("intro H.", "Error B.", polarity=Polarity.Negative)],
-    )
-    positive_attempts = (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: forall n : nat, n + 0 = n.\n"
-        "\n"
-        "Script: induction n.\n"
-        "\n"
-        "Rocq errors: Error on line 1.\n"
-        "\n"
-    )
-    negative_attempts = (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: ~ (forall n : nat, n + 0 = n.)\n"
-        "\n"
-        "Script: intro H.\n"
-        "\n"
-        "Rocq errors: Error B.\n"
-        "\n"
     )
 
     attempt, usage = RepairDirectAgent(mock_model).prove(node, Polarity.Positive)
@@ -176,45 +179,19 @@ def test_prove_positive_keeps_histories_in_order() -> None:
     )
     assert usage == TokenUsage(3, 5)
     mock_model.complete.assert_called_once_with(
-        [
-            {"role": "system", "content": EXPECTED_SYSTEM},
-            {
-                "role": "user",
-                "content": expected_user(
-                    Polarity.Positive, positive_attempts, negative_attempts
-                ),
-            },
-        ]
+        expected_messages(Polarity.Positive, node)
     )
 
 
-def test_prove_negative_swaps_histories_in_prompt() -> None:
+def test_prove_negative_keeps_same_history_order() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = CompletionResult(text="intro H. contradiction.", usage=TokenUsage(3, 5))
+    mock_model.complete.return_value = CompletionResult(
+        text="intro H. contradiction.", usage=TokenUsage(3, 5)
+    )
     node = LemmaNode(
         goal=GOAL,
         positive=[attempt_record("induction n.", "Error on line 1.")],
         negative=[attempt_record("intro H.", "Error B.", polarity=Polarity.Negative)],
-    )
-    positive_attempts = (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: forall n : nat, n + 0 = n.\n"
-        "\n"
-        "Script: induction n.\n"
-        "\n"
-        "Rocq errors: Error on line 1.\n"
-        "\n"
-    )
-    negative_attempts = (
-        "Attempt 1:\n"
-        "\n"
-        "Statement: ~ (forall n : nat, n + 0 = n.)\n"
-        "\n"
-        "Script: intro H.\n"
-        "\n"
-        "Rocq errors: Error B.\n"
-        "\n"
     )
 
     attempt, usage = RepairDirectAgent(mock_model).prove(node, Polarity.Negative)
@@ -227,23 +204,17 @@ def test_prove_negative_swaps_histories_in_prompt() -> None:
     )
     assert usage == TokenUsage(3, 5)
     mock_model.complete.assert_called_once_with(
-        [
-            {"role": "system", "content": EXPECTED_SYSTEM},
-            {
-                "role": "user",
-                "content": expected_user(
-                    Polarity.Negative,
-                    this_formula_attempts=negative_attempts,
-                    opposite_attempts=positive_attempts,
-                ),
-            },
-        ]
+        expected_messages(Polarity.Negative, node)
     )
+    user = mock_model.complete.call_args.args[0][1].joined_text()
+    assert user.index("induction n.") < user.index("intro H.")
 
 
 def test_prove_strips_markdown_fences_from_llm_output() -> None:
     mock_model = MagicMock()
-    mock_model.complete.return_value = CompletionResult(text="```\napply H.\n```", usage=TokenUsage(3, 5))
+    mock_model.complete.return_value = CompletionResult(
+        text="```\napply H.\n```", usage=TokenUsage(3, 5)
+    )
 
     attempt, usage = RepairDirectAgent(mock_model).prove(
         LemmaNode(goal=GOAL), Polarity.Positive
@@ -273,3 +244,23 @@ def test_prove_handles_empty_llm_response() -> None:
         new_lemmas=[],
     )
     assert usage == TokenUsage(3, 5)
+
+
+def test_describe_includes_model_and_reasoning_effort() -> None:
+    mock_model = MagicMock()
+    mock_model.model = "gpt-5.6-luna"
+    mock_model.reasoning_effort = "none"
+
+    description = RepairDirectAgent(mock_model).describe(TokenUsage(3, 5, 4))
+
+    assert description == ("RepairDirectAgent, model=gpt-5.6-luna reasoning=none")
+
+
+def test_describe_omits_reasoning_effort_when_unset() -> None:
+    mock_model = MagicMock()
+    mock_model.model = "gpt-4o-mini"
+    mock_model.reasoning_effort = None
+
+    assert RepairDirectAgent(mock_model).describe(TokenUsage()) == (
+        "RepairDirectAgent, model=gpt-4o-mini"
+    )

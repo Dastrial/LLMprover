@@ -1,0 +1,6 @@
+HARD RULE {N} — HELPER GENUINE PROGRESS
+
+Every helper must be meaningfully easier to prove than its parent goal —
+mathematically and in the currently available Rocq environment.
+No renamed parent, cosmetic reformulation, or helper that essentially requires
+solving the parent. Logical strength alone is not the criterion; progress is.

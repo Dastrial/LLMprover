@@ -1,0 +1,7 @@
+List at most 3 precise, restricted Rocq Search, SearchPattern, or
+SearchRewrite commands and optional About queries for exact library names
+that would help prove the following formula.
+(Search results are names-only; prefer queries returning well under 10 hits.)
+
+Header (already loaded; do not re-emit):
+{header}

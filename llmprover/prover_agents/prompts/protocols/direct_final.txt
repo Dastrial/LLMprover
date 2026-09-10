@@ -1,0 +1,16 @@
+OUTPUT PROTOCOL — FINAL DIRECT / REPAIR ANSWER
+
+When the current turn is the FINAL ANSWER for a direct or repair proof, the
+response is only the complete Rocq tactic body between `Proof.` and `Qed.`
+
+Every ordinary tactic command must end with `.`
+A newline does not terminate a tactic command.
+Prefer simple one-command-per-line scripts when possible.
+
+Do not output:
+- `Proof.`
+- `Qed.`
+- `Lemma` / `Theorem` declarations
+- imports (`Require Import`, …)
+- prose, comments, markdown fences, or headings
+- any text that is not part of the tactic script

@@ -6,7 +6,12 @@ from pathlib import Path
 
 from llmprover.domain import LemmaNode, Polarity, ProofAttempt, statement_for_polarity
 from llmprover.llm_client import LLMClient, TokenUsage
-from llmprover.prompts import fill_prompt, load_prompt
+from llmprover.prompts import (
+    PromptMessage,
+    PromptPart,
+    fill_prompt,
+)
+from llmprover.prover_agents.prompt_assembly import DIRECT_SPEC, cached_system_prompt
 from llmprover.prover_agents.prover_agent import ProverAgent
 from llmprover.utils import parse_proof_script
 
@@ -33,15 +38,26 @@ class DirectAgent(ProverAgent):
         self, node: LemmaNode, polarity: Polarity
     ) -> tuple[ProofAttempt, TokenUsage]:
         goal = node.goal
-        system = load_prompt(PROMPTS_DIR / "direct_proof_system.txt")
-        user = fill_prompt(
-            load_prompt(PROMPTS_DIR / "direct_proof_user.txt"),
+        system = cached_system_prompt(DIRECT_SPEC)
+        before = fill_prompt(
+            (PROMPTS_DIR / "direct_proof_user_before.txt").read_text(encoding="utf-8").strip(),
+            header=goal.environment.header,
+        )
+        if not before.endswith("\n"):
+            before = f"{before}\n"
+        after = fill_prompt(
+            (PROMPTS_DIR / "direct_proof_user_after.txt").read_text(encoding="utf-8").strip(),
             statement=statement_for_polarity(goal.statement, polarity),
         )
+        if after and not after.endswith("\n"):
+            after = f"{after}\n"
         completion = self.model.complete(
             [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
+                PromptMessage.text("system", system, cache_breakpoint=True),
+                PromptMessage(
+                    role="user",
+                    parts=(PromptPart(before, cache_breakpoint=True), PromptPart(after)),
+                ),
             ]
         )
         script = parse_proof_script(completion.text)

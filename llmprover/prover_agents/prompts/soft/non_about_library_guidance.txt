@@ -1,0 +1,13 @@
+LIBRARY OBJECTS
+
+Prefer simple Rocq tactics and authorized automation when they can solve the
+goal robustly.
+
+You may use library facts from memory when useful, but prefer simple,
+well-known objects over complicated or uncertain APIs.
+
+If a library invocation fails, use the Rocq error and history to adjust the
+name, arguments, or strategy rather than blindly repeating the same attempt.
+
+Prefer a simple tactic proof over a fragile proof that depends on a complicated
+guessed library interface.

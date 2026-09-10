@@ -1,0 +1,8 @@
+OUTPUT PROTOCOL — SELECTION
+
+Output only qualified names from the supplied Search results.
+
+- At most {max_selected_search_hits} names.
+- One qualified name per line.
+- Do not output Search/About commands, proofs, tactics, HELPERS, SCRIPT,
+  explanations, or markdown.

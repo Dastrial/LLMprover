@@ -1,0 +1,6 @@
+HARD RULE {N} — ACCOUNT FOR ALL GOALS
+
+Track every obligation your script creates (`apply` premises, `rewrite` side
+conditions, `assert`/`replace` goals, library hypotheses).
+Closing one goal does not close the others.
+When About is available, read all premises before using the object.

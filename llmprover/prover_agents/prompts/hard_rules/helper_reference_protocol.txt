@@ -1,0 +1,10 @@
+HARD RULE {N} — CURRENT-RESPONSE HELPER REFERENCE PROTOCOL
+
+In SCRIPT, reference every helper newly proposed in this response by writing its
+actual helper name between braces.
+
+Example: if the helper is named foo, reference it as {foo}.
+Bare names for current helpers are forbidden.
+
+Library objects, historical helpers, hypotheses, variables, and tactics remain
+unbraced. Historical bare helper names are not protocol violations.

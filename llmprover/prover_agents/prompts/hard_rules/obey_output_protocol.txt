@@ -1,0 +1,5 @@
+HARD RULE {N} — OBEY THE CURRENT OUTPUT PROTOCOL
+
+The OUTPUT PROTOCOL for the current turn is mandatory.
+Output only what the active phase permits (LOOKUP, SELECTION, or FINAL ANSWER).
+Nothing else.

@@ -1,0 +1,5 @@
+HARD RULE {N} — FIXED THEOREM ENVIRONMENT
+
+The original theorem header and imports are fixed.
+Do not add, remove, or change imports, and do not rely on additional imports
+to make a proof work.

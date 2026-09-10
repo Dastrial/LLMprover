@@ -5,26 +5,33 @@ from __future__ import annotations
 from pathlib import Path
 
 from llmprover.domain import (
-    AttemptRecord,
     LemmaNode,
     Polarity,
     ProofAttempt,
     statement_for_polarity,
 )
+from llmprover.history_presenter import DeterministicHistoryPresenter, HistoryPresenter
 from llmprover.llm_client import LLMClient, TokenUsage
-from llmprover.prompts import fill_prompt, load_prompt
+from llmprover.prompts import (
+    PromptMessage,
+    PromptPart,
+    fill_prompt,
+)
+from llmprover.prover_agents.prompt_assembly import (
+    REPAIR_DIRECT_SPEC,
+    cached_system_prompt,
+)
 from llmprover.prover_agents.prover_agent import ProverAgent
-from llmprover.utils import format_attempts, parse_proof_script
+from llmprover.utils import parse_proof_script
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
-EMPTY_ATTEMPTS = "No previous attempts.\n"
 
 
 class RepairDirectAgent(ProverAgent):
     """LLM-based agent for direct Rocq proof generation with history.
 
     Uses a fixed system prompt and includes both positive and negative attempt
-    histories from the lemma node.
+    histories from the lemma node (direct attempts only).
     """
 
     DEFAULT_SPEC = (
@@ -34,47 +41,41 @@ class RepairDirectAgent(ProverAgent):
         "decomposition because history omits decomposition attempts."
     )
 
-    def __init__(self, model: LLMClient) -> None:
+    def __init__(
+        self,
+        model: LLMClient,
+        *,
+        history_presenter: HistoryPresenter | None = None,
+    ) -> None:
         self.model = model
-
-    @staticmethod
-    def direct_records(records: list[AttemptRecord]) -> list[AttemptRecord]:
-        return [record for record in records if not record.attempt.new_lemmas]
-
-    @classmethod
-    def format_histories(cls, node: LemmaNode) -> tuple[str, str]:
-        return (
-            format_attempts(
-                cls.direct_records(node.positive),
-                empty=EMPTY_ATTEMPTS,
-            ),
-            format_attempts(
-                cls.direct_records(node.negative),
-                empty=EMPTY_ATTEMPTS,
-            ),
-        )
+        self.history_presenter = history_presenter or DeterministicHistoryPresenter.repair()
 
     def prove(
         self, node: LemmaNode, polarity: Polarity
     ) -> tuple[ProofAttempt, TokenUsage]:
         goal = node.goal
-        this_formula_attempts, opposite_attempts = self.format_histories(node)
-        if polarity is Polarity.Negative:
-            this_formula_attempts, opposite_attempts = (
-                opposite_attempts,
-                this_formula_attempts,
-            )
-        system = load_prompt(PROMPTS_DIR / "direct_proof_system.txt")
-        user = fill_prompt(
-            load_prompt(PROMPTS_DIR / "repair_direct_proof_user.txt"),
-            statement=statement_for_polarity(goal.statement, polarity),
-            this_formula_attempts=this_formula_attempts,
-            opposite_attempts=opposite_attempts,
+        attempt_history, hist_usage = self.history_presenter.present_prompt_block(node)
+        system = cached_system_prompt(REPAIR_DIRECT_SPEC)
+        before = fill_prompt(
+            (PROMPTS_DIR / "repair_direct_proof_user_before.txt").read_text(encoding="utf-8").strip(),
+            header=goal.environment.header,
         )
+        if not before.endswith("\n"):
+            before = f"{before}\n"
+        after = fill_prompt(
+            (PROMPTS_DIR / "repair_direct_proof_user_after.txt").read_text(encoding="utf-8").strip(),
+            statement=statement_for_polarity(goal.statement, polarity),
+        )
+        if after and not after.endswith("\n"):
+            after = f"{after}\n"
+        history = attempt_history if attempt_history.endswith("\n") else f"{attempt_history}\n"
         completion = self.model.complete(
             [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
+                PromptMessage.text("system", system, cache_breakpoint=True),
+                PromptMessage(
+                    role="user",
+                    parts=(PromptPart(before + history, cache_breakpoint=True), PromptPart(after)),
+                ),
             ]
         )
         script = parse_proof_script(completion.text)
@@ -85,5 +86,5 @@ class RepairDirectAgent(ProverAgent):
                 script=script,
                 new_lemmas=[],
             ),
-            completion.usage,
+            hist_usage + completion.usage,
         )

@@ -1,0 +1,6 @@
+HARD RULE {N} — PREVIOUS ROCQ FAILURES ARE CONSTRAINTS
+
+Never resubmit exactly the same failed or timed-out tactic script.
+If Rocq rejected command N, change command N or an earlier step that changes
+the proof state reaching N; changing only later commands cannot repair it.
+Do not reuse a library name Rocq reported missing.

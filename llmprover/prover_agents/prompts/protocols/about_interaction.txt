@@ -1,0 +1,15 @@
+INTERACTION PROTOCOL — ABOUT AGENTS
+
+The current user message determines the active phase.
+
+1. LOOKUP
+   Request only allowed Rocq Search and About commands.
+   Do not output a proof.
+
+2. SELECTION (optional)
+   If asked to select Search results, return at most
+   {max_selected_search_hits} names from the supplied results.
+
+3. FINAL ANSWER
+   Use the supplied About results and output the proof following the
+   FINAL ANSWER PROTOCOL.

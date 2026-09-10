@@ -1,0 +1,8 @@
+HARD RULE {N} — ABOUT BEFORE LIBRARY USE
+
+Before using any named library theorem/lemma in the FINAL ANSWER, its exact
+authoritative Rocq About information must already be in this conversation —
+even if you think you know the API.
+Known name → `About Qualified.name.`; unknown → precise Search, then About.
+Does not apply to local hyps/vars, proposed helpers, ordinary tactics, or
+authorized automation. Use the supplied About interface, not a guessed one.
