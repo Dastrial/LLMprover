@@ -1,4 +1,4 @@
-"""Tests for llmprover.model_registry."""
+"""Tests for llmprover.llm.model_registry."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from llmprover.llm_client import OpenAIClient
-from llmprover.model_registry import ModelRegistry
+from llmprover.llm.client import OpenAIClient
+from llmprover.llm.model_registry import ModelRegistry
 
 
 def test_register_returns_model_name_as_id() -> None:

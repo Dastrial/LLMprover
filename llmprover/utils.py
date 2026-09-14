@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from llmprover.domain import AttemptRecord, LemmaNode
-from llmprover.helper_resolution import script_with_child_names
+from llmprover.rocq.helper_resolution import script_with_child_names
 
 EMPTY_ATTEMPTS = "No previous attempts.\n"
 

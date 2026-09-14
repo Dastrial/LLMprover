@@ -27,21 +27,21 @@ from typing import Iterator, TextIO
 
 from dotenv import load_dotenv
 
-from llmprover.agent_registry import AgentRegistry
+from llmprover.prover_agents.agent_registry import AgentRegistry
 from llmprover.domain import Goal, LemmaStatus
-from llmprover.history_presenter import DeterministicHistoryPresenter
-from llmprover.llm_attempt_strategy import LLMAttemptStrategy
-from llmprover.llm_client import OpenAIClient
+from llmprover.history.presenter import DeterministicHistoryPresenter
+from llmprover.strategy.llm_attempt_strategy import LLMAttemptStrategy
+from llmprover.llm.client import OpenAIClient
 from llmprover.minif2f.loader import load_minif2f
-from llmprover.model_registry import ModelRegistry
+from llmprover.llm.model_registry import ModelRegistry
 from llmprover.orchestrator import Orchestrator
-from llmprover.positive_retry_lemma_selection_strategy import (
+from llmprover.strategy.positive_retry_lemma_selection_strategy import (
     PositiveRetryLemmaSelectionStrategy,
 )
 from llmprover.prover_agents.decomposition_about_agent import DecompositionAboutAgent
 from llmprover.prover_agents.repair_direct_about_agent import RepairDirectAboutAgent
-from llmprover.rocq import CoqcBackend
-from llmprover.simple_lemma_selection_strategy import SimpleLemmaSelectionStrategy
+from llmprover.rocq.backend import CoqcBackend
+from llmprover.strategy.simple_lemma_selection_strategy import SimpleLemmaSelectionStrategy
 
 load_dotenv()
 

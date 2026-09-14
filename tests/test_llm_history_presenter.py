@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from llmprover.detailed_llm_history_presenter import DetailedLLMHistoryPresenter
+from llmprover.history.detailed_llm_history_presenter import DetailedLLMHistoryPresenter
 from llmprover.domain import (
     AttemptRecord,
     CoqcResult,
@@ -13,9 +13,9 @@ from llmprover.domain import (
     Polarity,
     ProofAttempt,
 )
-from llmprover.history_presenter import HistoryPresenter
-from llmprover.llm_client import CompletionResult, TokenUsage
-from llmprover.strategy_llm_history_presenter import StrategyLLMHistoryPresenter
+from llmprover.history.presenter import HistoryPresenter
+from llmprover.llm.client import CompletionResult, TokenUsage
+from llmprover.history.strategy_llm_history_presenter import StrategyLLMHistoryPresenter
 from llmprover.utils import EMPTY_ATTEMPTS
 
 GOAL = Goal(name="plus_n0", statement="forall n : nat, n + 0 = n.")

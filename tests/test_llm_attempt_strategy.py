@@ -1,11 +1,11 @@
-"""Tests for llmprover.llm_attempt_strategy."""
+"""Tests for llmprover.strategy.llm_attempt_strategy."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from llmprover.agent_registry import AgentRegistry
+from llmprover.prover_agents.agent_registry import AgentRegistry
 from llmprover.domain import (
     AttemptRecord,
     CoqcResult,
@@ -15,15 +15,15 @@ from llmprover.domain import (
     ProofAttempt,
     statement_for_polarity,
 )
-from llmprover.history_presenter import DeterministicHistoryPresenter
-from llmprover.llm_attempt_strategy import (
+from llmprover.history.presenter import DeterministicHistoryPresenter
+from llmprover.strategy.llm_attempt_strategy import (
     MAX_AGENT_LEAD,
     LLMAttemptStrategy,
     format_specs,
 )
-from llmprover.llm_client import CompletionResult, OpenAIClient, TokenUsage
-from llmprover.model_registry import ModelRegistry
-from llmprover.prompts import (
+from llmprover.llm.client import CompletionResult, OpenAIClient, TokenUsage
+from llmprover.llm.model_registry import ModelRegistry
+from llmprover.llm.prompting import (
     PromptMessage,
     PromptPart,
     fill_prompt,

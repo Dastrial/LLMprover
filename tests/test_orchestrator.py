@@ -21,17 +21,17 @@ from llmprover.domain import (
     ProofAttempt,
     RocqEnvironment,
 )
-from llmprover.equivalence_merger import CYCLE_ERROR
-from llmprover.history_presenter import DeterministicHistoryPresenter
-from llmprover.llm_client import TokenUsage
+from llmprover.rocq.equivalence_merger import CYCLE_ERROR
+from llmprover.history.presenter import DeterministicHistoryPresenter
+from llmprover.llm.client import TokenUsage
 from llmprover.orchestrator import (
     Orchestrator,
     assemble_complete_proof,
     format_lemma_block,
     format_usage,
 )
-from llmprover.proof_script import ProofScript
-from llmprover.rocq import CoqcBackend
+from llmprover.rocq.proof_script import ProofScript
+from llmprover.rocq.backend import CoqcBackend
 from llmprover.utils import format_attempts
 
 GOAL = Goal(name="plus_n0", statement="forall n : nat, n + 0 = n.")

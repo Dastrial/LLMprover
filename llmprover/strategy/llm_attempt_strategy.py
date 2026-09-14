@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from llmprover.agent_registry import AgentRegistry
-from llmprover.attempt_strategy import AttemptStrategy
+from llmprover.prover_agents.agent_registry import AgentRegistry
+from llmprover.strategy.attempt_strategy import AttemptStrategy
 from llmprover.domain import LemmaNode, Polarity, statement_for_polarity
-from llmprover.history_presenter import DeterministicHistoryPresenter, HistoryPresenter
-from llmprover.llm_client import LLMClient, TokenUsage
-from llmprover.model_registry import ModelRegistry
-from llmprover.prompts import (
+from llmprover.history.presenter import DeterministicHistoryPresenter, HistoryPresenter
+from llmprover.llm.client import LLMClient, TokenUsage
+from llmprover.llm.model_registry import ModelRegistry
+from llmprover.llm.prompting import (
     PromptMessage,
     PromptPart,
     fill_prompt,
@@ -18,7 +18,7 @@ from llmprover.prompts import (
 from llmprover.prover_agents.prover_agent import ProverAgent
 from llmprover.utils import strip_markdown_fences
 
-PROMPTS_DIR = Path(__file__).parent / "prompts"
+PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
 # If one prover has this many more calls than every other on the current
 # lemma, the next choice is forced onto a less-used agent.  The deliberately

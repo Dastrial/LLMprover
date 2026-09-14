@@ -1,8 +1,8 @@
-"""Tests for llmprover.model_prices."""
+"""Tests for llmprover.llm.model_prices."""
 
 from __future__ import annotations
 
-from llmprover.model_prices import DEFAULT_PRICE, MODEL_PRICES, ModelPrice, price_for
+from llmprover.llm.model_prices import DEFAULT_PRICE, MODEL_PRICES, ModelPrice, price_for
 
 
 def test_price_for_known_model() -> None:

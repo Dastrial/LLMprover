@@ -18,7 +18,7 @@ from llmprover.domain import (
     Polarity,
     Position,
 )
-from llmprover.lemma_selection_strategy import LemmaSelectionStrategy
+from llmprover.strategy.lemma_selection_strategy import LemmaSelectionStrategy
 
 # An open lemma with active helper obligations competes with its helpers using
 # this fixed score. A leaf instead uses its real number of attempts since reset.

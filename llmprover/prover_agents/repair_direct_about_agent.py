@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from llmprover.domain import LemmaNode, Polarity, ProofAttempt, statement_for_polarity
-from llmprover.history_presenter import DeterministicHistoryPresenter, HistoryPresenter
-from llmprover.llm_client import LLMClient, TokenUsage
-from llmprover.prompts import PromptMessage, fill_prompt
+from llmprover.history.presenter import DeterministicHistoryPresenter, HistoryPresenter
+from llmprover.llm.client import LLMClient, TokenUsage
+from llmprover.llm.prompting import PromptMessage, fill_prompt
 from llmprover.prover_agents.about_lookup import (
     REPAIR_DIRECT_ABOUT_SEARCH_USER_AFTER,
     REPAIR_DIRECT_ABOUT_SEARCH_USER_BEFORE,
@@ -18,7 +18,7 @@ from llmprover.prover_agents.prompt_assembly import (
     cached_system_prompt,
 )
 from llmprover.prover_agents.prover_agent import ProverAgent
-from llmprover.rocq import CoqcBackend
+from llmprover.rocq.backend import CoqcBackend
 from llmprover.utils import parse_proof_script
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"

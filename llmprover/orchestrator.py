@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from llmprover.attempt_strategy import AttemptStrategy
-from llmprover.coqc_output import CoqcResult
+from llmprover.strategy.attempt_strategy import AttemptStrategy
+from llmprover.rocq.coqc_output import CoqcResult
 from llmprover.domain import (
     AttemptRecord,
     Goal,
@@ -13,17 +13,17 @@ from llmprover.domain import (
     Position,
     ProofAttempt,
 )
-from llmprover.equivalence_merger import CYCLE_ERROR, EquivalenceMerger
-from llmprover.helper_resolution import (
+from llmprover.rocq.equivalence_merger import CYCLE_ERROR, EquivalenceMerger
+from llmprover.rocq.helper_resolution import (
     new_helper_protocol_error,
     script_with_child_names,
 )
-from llmprover.history_presenter import HistoryPresenter
-from llmprover.lemma_selection_strategy import LemmaSelectionStrategy
-from llmprover.llm_client import TokenUsage
-from llmprover.proof_script import ProofScript
+from llmprover.history.presenter import HistoryPresenter
+from llmprover.strategy.lemma_selection_strategy import LemmaSelectionStrategy
+from llmprover.llm.client import TokenUsage
+from llmprover.rocq.proof_script import ProofScript
 from llmprover.prover_agents.prover_agent import ProverAgent
-from llmprover.rocq import CoqcBackend
+from llmprover.rocq.backend import CoqcBackend
 
 
 def format_usage(usage: TokenUsage) -> str:

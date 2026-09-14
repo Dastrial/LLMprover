@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from llmprover.coqc_output import CoqcResult
-from llmprover.llm_client import CompletionResult, TokenUsage
-from llmprover.prompts import (
+from llmprover.rocq.coqc_output import CoqcResult
+from llmprover.llm.client import CompletionResult, TokenUsage
+from llmprover.llm.prompting import (
     PromptMessage,
     PromptPart,
 )

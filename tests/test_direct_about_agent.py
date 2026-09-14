@@ -14,8 +14,8 @@ from llmprover.domain import (
     RocqEnvironment,
     statement_for_polarity,
 )
-from llmprover.llm_client import CompletionResult, TokenUsage
-from llmprover.prompts import (
+from llmprover.llm.client import CompletionResult, TokenUsage
+from llmprover.llm.prompting import (
     PromptMessage,
     PromptPart,
     fill_prompt,

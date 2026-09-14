@@ -1,8 +1,8 @@
-"""Tests for llmprover.coqc_output."""
+"""Tests for llmprover.rocq.coqc_output."""
 
 from __future__ import annotations
 
-from llmprover.coqc_output import (
+from llmprover.rocq.coqc_output import (
     OUTSIDE_TACTIC_LOCUS,
     CoqcLocation,
     CoqcResult,

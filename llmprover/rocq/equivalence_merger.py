@@ -11,7 +11,7 @@ from llmprover.domain import (
     Position,
     ProofAttempt,
 )
-from llmprover.rocq import CoqcBackend
+from llmprover.rocq.backend import CoqcBackend
 
 CYCLE_ERROR = (
     "Dropped attempt: helper {helper} is equivalent to ancestor {ancestor} "

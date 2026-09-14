@@ -12,7 +12,7 @@ from llmprover.domain import (
     Polarity,
     RocqEnvironment,
 )
-from llmprover.llm_client import CompletionResult, TokenUsage
+from llmprover.llm.client import CompletionResult, TokenUsage
 from llmprover.prover_agents.about_limits import (
     MAX_SEARCH_COMMANDS,
     MAX_SELECTED_SEARCH_HITS,

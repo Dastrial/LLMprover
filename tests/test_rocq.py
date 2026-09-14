@@ -10,10 +10,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from llmprover.coqc_output import OUTSIDE_TACTIC_LOCUS, CoqcLocation, CoqcResult
+from llmprover.rocq.coqc_output import OUTSIDE_TACTIC_LOCUS, CoqcLocation, CoqcResult
 from llmprover.domain import Goal, Polarity, ProofAttempt, RocqEnvironment
-from llmprover.proof_script import ProofScript
-from llmprover.rocq import (
+from llmprover.rocq.proof_script import ProofScript
+from llmprover.rocq.backend import (
     CHECK_MODULE,
     STMT_EQ_LEMMA,
     STMT_EQ_LHS,
@@ -176,7 +176,7 @@ def test_check_script_from_temp_file(tmp_path: Path) -> None:
 
 
 @patch(
-    "llmprover.rocq.subprocess.run",
+    "llmprover.rocq.backend.subprocess.run",
     return_value=MagicMock(
         returncode=1,
         stdout="",
@@ -216,7 +216,7 @@ def test_check_script_verbose_prints_full_remapped_error(
 
 
 @patch(
-    "llmprover.rocq.subprocess.run",
+    "llmprover.rocq.backend.subprocess.run",
     return_value=MagicMock(
         returncode=1,
         stdout="",
@@ -267,7 +267,7 @@ def test_check_script_tactic_prelude_on_prepends_require() -> None:
         tactic_start_line=3,
         tactic_end_line=3,
     )
-    with patch("llmprover.rocq.subprocess.run", side_effect=capture_run):
+    with patch("llmprover.rocq.backend.subprocess.run", side_effect=capture_run):
         CoqcBackend().check_script(source, tactic_prelude=True)
 
     assert received[0] == (
@@ -289,14 +289,14 @@ def test_check_script_tactic_prelude_off_leaves_code_unchanged() -> None:
         tactic_start_line=3,
         tactic_end_line=3,
     )
-    with patch("llmprover.rocq.subprocess.run", side_effect=capture_run):
+    with patch("llmprover.rocq.backend.subprocess.run", side_effect=capture_run):
         CoqcBackend().check_script(source, tactic_prelude=False)
 
     assert received[0] == "Lemma t: True.\nProof.\nlia.\nQed.\n"
 
 
 @patch(
-    "llmprover.rocq.subprocess.run",
+    "llmprover.rocq.backend.subprocess.run",
     return_value=MagicMock(returncode=0, stdout="", stderr=""),
 )
 def test_check_script_verbose_prints_exact_code_sent_to_coqc(
@@ -319,7 +319,7 @@ def test_check_script_verbose_prints_exact_code_sent_to_coqc(
 
 
 @patch(
-    "llmprover.rocq.subprocess.run",
+    "llmprover.rocq.backend.subprocess.run",
     return_value=MagicMock(returncode=0, stdout="", stderr=""),
 )
 def test_check_script_silent_when_not_verbose(mock_run: MagicMock, capsys) -> None:
@@ -330,7 +330,7 @@ def test_check_script_silent_when_not_verbose(mock_run: MagicMock, capsys) -> No
 
 
 @patch(
-    "llmprover.rocq.subprocess.run",
+    "llmprover.rocq.backend.subprocess.run",
     side_effect=subprocess.TimeoutExpired(cmd=["coqc"], timeout=SLOW_CHECK_TIMEOUT),
 )
 def test_check_script_timeout(mock_run: MagicMock) -> None:

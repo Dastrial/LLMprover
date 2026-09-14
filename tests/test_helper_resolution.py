@@ -1,15 +1,15 @@
-"""Tests for llmprover.helper_resolution."""
+"""Tests for llmprover.rocq.helper_resolution."""
 
 from __future__ import annotations
 
-from llmprover.coqc_output import CoqcResult
+from llmprover.rocq.coqc_output import CoqcResult
 from llmprover.domain import (
     AttemptRecord,
     Goal,
     LemmaNode,
     ProofAttempt,
 )
-from llmprover.helper_resolution import (
+from llmprover.rocq.helper_resolution import (
     bare_new_helper_names,
     format_bare_helper_error,
     new_helper_protocol_error,

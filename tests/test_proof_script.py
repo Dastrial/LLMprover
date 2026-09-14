@@ -1,4 +1,4 @@
-"""Tests for llmprover.proof_script."""
+"""Tests for llmprover.rocq.proof_script."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from llmprover.proof_script import (
+from llmprover.rocq.proof_script import (
     ProofScript,
     shift_tactic_region,
     tactic_line_span,

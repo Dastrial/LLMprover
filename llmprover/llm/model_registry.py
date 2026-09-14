@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from llmprover.llm_client import LLMClient, OpenAIClient
+from llmprover.llm.client import LLMClient, OpenAIClient
 
 
 @dataclass(frozen=True)

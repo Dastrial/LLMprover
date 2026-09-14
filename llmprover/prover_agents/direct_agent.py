@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from llmprover.domain import LemmaNode, Polarity, ProofAttempt, statement_for_polarity
-from llmprover.llm_client import LLMClient, TokenUsage
-from llmprover.prompts import (
+from llmprover.llm.client import LLMClient, TokenUsage
+from llmprover.llm.prompting import (
     PromptMessage,
     PromptPart,
     fill_prompt,

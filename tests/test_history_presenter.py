@@ -1,4 +1,4 @@
-"""Tests for llmprover.history_presenter."""
+"""Tests for llmprover.history.presenter."""
 
 from __future__ import annotations
 
@@ -12,12 +12,12 @@ from llmprover.domain import (
     Polarity,
     ProofAttempt,
 )
-from llmprover.history_presenter import (
+from llmprover.history.presenter import (
     FULL_FORMAT_LEGEND,
     DeterministicHistoryPresenter,
     NullHistoryPresenter,
 )
-from llmprover.llm_client import TokenUsage
+from llmprover.llm.client import TokenUsage
 from llmprover.utils import EMPTY_ATTEMPTS
 
 GOAL = Goal(name="plus_n0", statement="forall n : nat, n + 0 = n.")

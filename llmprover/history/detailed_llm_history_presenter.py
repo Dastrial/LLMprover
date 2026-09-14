@@ -5,15 +5,15 @@ from __future__ import annotations
 from pathlib import Path
 
 from llmprover.domain import AttemptRecord
-from llmprover.history_presenter import HistoryPresenter
-from llmprover.llm_client import LLMClient, TokenUsage
-from llmprover.prompts import (
+from llmprover.history.presenter import HistoryPresenter
+from llmprover.llm.client import LLMClient, TokenUsage
+from llmprover.llm.prompting import (
     PromptMessage,
     fill_prompt,
 )
 from llmprover.utils import format_attempt, normalize_llm_summary
 
-PROMPTS_DIR = Path(__file__).parent / "prompts" / "history"
+PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts" / "history"
 
 
 class DetailedLLMHistoryPresenter(HistoryPresenter):

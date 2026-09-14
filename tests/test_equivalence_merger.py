@@ -1,4 +1,4 @@
-"""Tests for llmprover.equivalence_merger."""
+"""Tests for llmprover.rocq.equivalence_merger."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from llmprover.domain import (
     Position,
     ProofAttempt,
 )
-from llmprover.equivalence_merger import EquivalenceMerger
+from llmprover.rocq.equivalence_merger import EquivalenceMerger
 
 GOAL = Goal(name="plus_n0", statement="forall n : nat, n + 0 = n.")
 CHILD_A = Goal(name="base", statement="0 + 0 = 0.")

@@ -8,15 +8,15 @@ import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
-from llmprover.coqc_output import (
+from llmprover.rocq.coqc_output import (
     CoqcResult,
     parse_coqc_locations,
     parse_print_assumptions,
     remap_coqc_stderr,
 )
 from llmprover.domain import ProofAttempt, RocqEnvironment
-from llmprover.helper_resolution import resolve_attempt_helpers
-from llmprover.proof_script import ProofScript, shift_tactic_region, tactic_line_span
+from llmprover.rocq.helper_resolution import resolve_attempt_helpers
+from llmprover.rocq.proof_script import ProofScript, shift_tactic_region, tactic_line_span
 
 # Module wrapper so generated lemmas / admitted helpers get unambiguous
 # qualified names (e.g. ``LLMProver.helper`` instead of a bare ``helper``).

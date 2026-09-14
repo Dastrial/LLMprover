@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from llmprover.agent_registry import AgentRegistry
+from llmprover.prover_agents.agent_registry import AgentRegistry
 from llmprover.domain import LemmaNode, Polarity
-from llmprover.llm_client import TokenUsage
+from llmprover.llm.client import TokenUsage
 from llmprover.prover_agents.prover_agent import ProverAgent
 
 

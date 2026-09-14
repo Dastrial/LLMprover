@@ -6,20 +6,20 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from llmprover.llm_client import LLMClient, TokenUsage
-from llmprover.prompts import (
+from llmprover.llm.client import LLMClient, TokenUsage
+from llmprover.llm.prompting import (
     PromptMessage,
     PromptPart,
     fill_prompt,
 )
-from llmprover.proof_script import ProofScript
+from llmprover.rocq.proof_script import ProofScript
 from llmprover.prover_agents.about_limits import (
     MAX_SEARCH_COMMANDS,
     MAX_SEARCH_HITS_COLLECT,
     MAX_SELECTED_SEARCH_HITS,
     SEARCH_SELECTION_THRESHOLD,
 )
-from llmprover.rocq import CoqcBackend
+from llmprover.rocq.backend import CoqcBackend
 from llmprover.utils import strip_markdown_fences
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from llmprover.coqc_output import CoqcResult
+from llmprover.rocq.coqc_output import CoqcResult
 from llmprover.domain import (
     AttemptRecord,
     Goal,

@@ -10,9 +10,9 @@ from llmprover.domain import (
     ProofAttempt,
     statement_for_polarity,
 )
-from llmprover.history_presenter import DeterministicHistoryPresenter, HistoryPresenter
-from llmprover.llm_client import LLMClient, TokenUsage
-from llmprover.prompts import (
+from llmprover.history.presenter import DeterministicHistoryPresenter, HistoryPresenter
+from llmprover.llm.client import LLMClient, TokenUsage
+from llmprover.llm.prompting import (
     PromptMessage,
     PromptPart,
     fill_prompt,

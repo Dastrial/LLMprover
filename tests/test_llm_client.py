@@ -1,4 +1,4 @@
-"""Tests for llmprover.llm_client."""
+"""Tests for llmprover.llm.client."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from llmprover.llm_client import (
+from llmprover.llm.client import (
     AnthropicClient,
     CompletionResult,
     MistralAIClient,
@@ -18,7 +18,7 @@ from llmprover.llm_client import (
     _to_openai_messages,
     openai_supports_explicit_cache,
 )
-from llmprover.prompts import PromptMessage, PromptPart
+from llmprover.llm.prompting import PromptMessage, PromptPart
 
 USER_MESSAGE = [PromptMessage.text("user", "Hello")]
 SYSTEM_AND_USER = [
@@ -303,7 +303,7 @@ def test_openai_style_usage_parses_cache_and_reasoning_details() -> None:
 # --- OpenAIClient ---
 
 
-@patch("llmprover.llm_client.OpenAI")
+@patch("llmprover.llm.client.OpenAI")
 def test_openai_from_api_key_uses_default_model(mock_openai_cls: MagicMock) -> None:
     sdk_client = MagicMock()
     mock_openai_cls.return_value = sdk_client
@@ -315,7 +315,7 @@ def test_openai_from_api_key_uses_default_model(mock_openai_cls: MagicMock) -> N
     mock_openai_cls.assert_called_once_with(api_key="sk-test")
 
 
-@patch("llmprover.llm_client.OpenAI")
+@patch("llmprover.llm.client.OpenAI")
 def test_openai_from_api_key_accepts_custom_model(mock_openai_cls: MagicMock) -> None:
     openai_client = OpenAIClient.from_api_key("sk-test", model="gpt-4o-mini")
     assert openai_client.model == "gpt-4o-mini"
@@ -325,7 +325,7 @@ def test_openai_from_env_reads_default_variable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(OpenAIClient.DEFAULT_API_KEY_ENV, "sk-from-env")
-    with patch("llmprover.llm_client.OpenAI") as mock_openai_cls:
+    with patch("llmprover.llm.client.OpenAI") as mock_openai_cls:
         openai_client = OpenAIClient.from_env()
     assert openai_client.model == OpenAIClient.DEFAULT_MODEL
     mock_openai_cls.assert_called_once_with(api_key="sk-from-env")
@@ -346,7 +346,7 @@ def test_openai_from_env_reads_custom_env_var(
 ) -> None:
     monkeypatch.delenv(OpenAIClient.DEFAULT_API_KEY_ENV, raising=False)
     monkeypatch.setenv("CUSTOM_OPENAI_KEY", "sk-custom-env")
-    with patch("llmprover.llm_client.OpenAI") as mock_openai_cls:
+    with patch("llmprover.llm.client.OpenAI") as mock_openai_cls:
         openai_client = OpenAIClient.from_env("CUSTOM_OPENAI_KEY")
     assert openai_client.model == OpenAIClient.DEFAULT_MODEL
     mock_openai_cls.assert_called_once_with(api_key="sk-custom-env")
@@ -356,7 +356,7 @@ def test_openai_from_env_accepts_custom_model(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(OpenAIClient.DEFAULT_API_KEY_ENV, "sk-from-env")
-    with patch("llmprover.llm_client.OpenAI"):
+    with patch("llmprover.llm.client.OpenAI"):
         openai_client = OpenAIClient.from_env(model="gpt-4o")
     assert openai_client.model == "gpt-4o"
 
@@ -473,7 +473,7 @@ def test_openai_complete_returns_empty_string_when_content_is_none() -> None:
 # --- MistralAIClient ---
 
 
-@patch("llmprover.llm_client.Mistral")
+@patch("llmprover.llm.client.Mistral")
 def test_mistral_from_api_key_uses_default_model(mock_mistral_cls: MagicMock) -> None:
     sdk_client = MagicMock()
     mock_mistral_cls.return_value = sdk_client
@@ -485,7 +485,7 @@ def test_mistral_from_api_key_uses_default_model(mock_mistral_cls: MagicMock) ->
     mock_mistral_cls.assert_called_once_with(api_key="mistral-key")
 
 
-@patch("llmprover.llm_client.Mistral")
+@patch("llmprover.llm.client.Mistral")
 def test_mistral_from_api_key_accepts_custom_model(mock_mistral_cls: MagicMock) -> None:
     mistral_client = MistralAIClient.from_api_key(
         "mistral-key", model="mistral-small-latest"
@@ -497,7 +497,7 @@ def test_mistral_from_env_reads_default_variable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(MistralAIClient.DEFAULT_API_KEY_ENV, "mistral-from-env")
-    with patch("llmprover.llm_client.Mistral") as mock_mistral_cls:
+    with patch("llmprover.llm.client.Mistral") as mock_mistral_cls:
         mistral_client = MistralAIClient.from_env()
     assert mistral_client.model == MistralAIClient.DEFAULT_MODEL
     mock_mistral_cls.assert_called_once_with(api_key="mistral-from-env")
@@ -518,7 +518,7 @@ def test_mistral_from_env_reads_custom_env_var(
 ) -> None:
     monkeypatch.delenv(MistralAIClient.DEFAULT_API_KEY_ENV, raising=False)
     monkeypatch.setenv("CUSTOM_MISTRAL_KEY", "mistral-custom-env")
-    with patch("llmprover.llm_client.Mistral") as mock_mistral_cls:
+    with patch("llmprover.llm.client.Mistral") as mock_mistral_cls:
         mistral_client = MistralAIClient.from_env("CUSTOM_MISTRAL_KEY")
     assert mistral_client.model == MistralAIClient.DEFAULT_MODEL
     mock_mistral_cls.assert_called_once_with(api_key="mistral-custom-env")
@@ -528,7 +528,7 @@ def test_mistral_from_env_accepts_custom_model(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(MistralAIClient.DEFAULT_API_KEY_ENV, "mistral-from-env")
-    with patch("llmprover.llm_client.Mistral"):
+    with patch("llmprover.llm.client.Mistral"):
         mistral_client = MistralAIClient.from_env(model="mistral-small-latest")
     assert mistral_client.model == "mistral-small-latest"
 
@@ -588,7 +588,7 @@ def test_mistral_flattens_breakpoints_and_bills_cached_reads() -> None:
 # --- AnthropicClient ---
 
 
-@patch("llmprover.llm_client.Anthropic")
+@patch("llmprover.llm.client.Anthropic")
 def test_anthropic_from_api_key_uses_default_model(
     mock_anthropic_cls: MagicMock,
 ) -> None:
@@ -602,7 +602,7 @@ def test_anthropic_from_api_key_uses_default_model(
     mock_anthropic_cls.assert_called_once_with(api_key="anthropic-key")
 
 
-@patch("llmprover.llm_client.Anthropic")
+@patch("llmprover.llm.client.Anthropic")
 def test_anthropic_from_api_key_accepts_custom_model(
     mock_anthropic_cls: MagicMock,
 ) -> None:
@@ -628,7 +628,7 @@ def test_anthropic_from_env_reads_custom_env_var(
 ) -> None:
     monkeypatch.delenv(AnthropicClient.DEFAULT_API_KEY_ENV, raising=False)
     monkeypatch.setenv("CUSTOM_ANTHROPIC_KEY", "anthropic-custom-env")
-    with patch("llmprover.llm_client.Anthropic") as mock_anthropic_cls:
+    with patch("llmprover.llm.client.Anthropic") as mock_anthropic_cls:
         anthropic_client = AnthropicClient.from_env("CUSTOM_ANTHROPIC_KEY")
     assert anthropic_client.model == AnthropicClient.DEFAULT_MODEL
     mock_anthropic_cls.assert_called_once_with(api_key="anthropic-custom-env")
@@ -638,7 +638,7 @@ def test_anthropic_from_env_accepts_custom_model(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(AnthropicClient.DEFAULT_API_KEY_ENV, "anthropic-from-env")
-    with patch("llmprover.llm_client.Anthropic"):
+    with patch("llmprover.llm.client.Anthropic"):
         anthropic_client = AnthropicClient.from_env(model="claude-sonnet-4-20250514")
     assert anthropic_client.model == "claude-sonnet-4-20250514"
 

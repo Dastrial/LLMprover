@@ -12,7 +12,7 @@ from llmprover.domain import (
     Polarity,
     ProofAttempt,
 )
-from llmprover.llm_client import CompletionResult, TokenUsage
+from llmprover.llm.client import CompletionResult, TokenUsage
 from llmprover.prover_agents.decomposition_about_agent import DecompositionAboutAgent
 from llmprover.prover_agents.decomposition_agent import DecompositionAgent
 from llmprover.prover_agents.direct_about_agent import DirectAboutAgent

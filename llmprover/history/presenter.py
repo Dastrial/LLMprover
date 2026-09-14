@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from llmprover.domain import AttemptRecord, LemmaNode
-from llmprover.llm_client import TokenUsage
+from llmprover.llm.client import TokenUsage
 from llmprover.utils import EMPTY_ATTEMPTS, format_attempt
 
 REPAIR_FORMAT_LEGEND = """\

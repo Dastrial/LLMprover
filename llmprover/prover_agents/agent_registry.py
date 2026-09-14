@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from llmprover.history_presenter import HistoryPresenter
-from llmprover.llm_client import LLMClient
+from llmprover.history.presenter import HistoryPresenter
+from llmprover.llm.client import LLMClient
 from llmprover.prover_agents.prover_agent import ProverAgent
 
 

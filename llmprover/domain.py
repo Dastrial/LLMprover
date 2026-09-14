@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TypeAlias
 
-from llmprover.coqc_output import CoqcResult
+from llmprover.rocq.coqc_output import CoqcResult
 
 
 class Polarity(Enum):

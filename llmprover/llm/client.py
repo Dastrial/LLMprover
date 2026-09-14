@@ -22,8 +22,8 @@ from anthropic import Anthropic
 from mistralai.client import Mistral
 from openai import OpenAI
 
-from llmprover.model_prices import price_for
-from llmprover.prompts import PromptMessage
+from llmprover.llm.model_prices import price_for
+from llmprover.llm.prompting import PromptMessage
 
 
 @dataclass(frozen=True)

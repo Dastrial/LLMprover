@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import ClassVar
 
 from llmprover.domain import LemmaNode, Polarity, ProofAttempt
-from llmprover.llm_client import TokenUsage
+from llmprover.llm.client import TokenUsage
 
 
 class ProverAgent(ABC):

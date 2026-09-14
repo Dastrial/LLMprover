@@ -1,4 +1,4 @@
-"""Tests for llmprover.positive_retry_lemma_selection_strategy."""
+"""Tests for llmprover.strategy.positive_retry_lemma_selection_strategy."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from llmprover.domain import (
     Position,
     ProofAttempt,
 )
-from llmprover.positive_retry_lemma_selection_strategy import (
+from llmprover.strategy.positive_retry_lemma_selection_strategy import (
     PARENT_RETRY_SCORE,
     PositiveRetryLemmaSelectionStrategy,
 )
