@@ -11,14 +11,13 @@ is proved or its dollar/attempt budget is exhausted.
 ## Results
 
 The `positive_retry` campaign evaluated all 243 problems accepted by the
-loader from the miniF2F-rocq **test split**, with a budget of **$0.04 per
-problem**:
+loader from the miniF2F-rocq **test split**, with a pre-attempt budget threshold of **$0.04 per problem**:
 
 | Metric | Result |
 |---|---:|
 | Problems evaluated | 243 |
 | Theorems proved | **75 / 243 (30.9%)** |
-| Total API cost | **$7.49** |
+| Estimated token cost (completed logs) | **$7.49** |
 | Successful runs below $0.01 | **64 / 75** |
 | Successful runs at or below $0.04 | **74 / 75** |
 
@@ -76,6 +75,10 @@ A controller LLM chooses an agent and model from explicit registries. History
 presenters give agents and the controller cache-friendly views of earlier
 attempts.
 
+The supplied selection prompt is tailored to `RepairDirectAboutAgent` and
+`DecompositionAboutAgent`; changing the registered agent set currently also
+requires adapting the selection prompt.
+
 ### Checked decomposition
 
 Generated scripts are not accepted on model output alone. `CoqcBackend` runs
@@ -120,8 +123,9 @@ python eval_minif2f.py --lemma-selector positive-retry --limit 3
 ```
 
 `eval_minif2f.py` writes one resumable log per problem under
-`benchmark_runs/<selector>/`. This directory is gitignored. Running the full
-test split makes paid API calls:
+`benchmark_runs/<selector>/`. This directory is gitignored. Both commands above make paid OpenAI API calls.
+The second evaluates only three problems. Omitting `--limit` runs the full test split and can incur
+several dollars:
 
 ```bash
 python eval_minif2f.py --lemma-selector positive-retry
@@ -163,9 +167,10 @@ Shell environment variables take precedence over values loaded from `.env`.
 - **Search control remains heuristic.** `positive_retry` prevents the search
   from remaining indefinitely below one decomposition, but it is not a learned
   or globally optimized scheduler.
-- **The evaluation is limited.** The reported campaign covers one dataset,
-  configuration, model family, and random run; it is evidence of current
-  behavior, not a general theorem-proving benchmark claim.
+- **Results are configuration-specific.** The reported campaign covers one
+  dataset, model configuration, and random run. It is a reproducible snapshot
+  of the current orchestration method, not a comparison of foundation models
+  or a general theorem-proving benchmark claim.
 
 ## Roadmap
 
