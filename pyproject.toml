@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "python-dotenv>=1.0",
-    "openai>=1.0",
+    "openai>=3.3",
     "anthropic>=0.40",
     "mistralai>=1.0",
 ]
@@ -14,6 +14,10 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+]
+bench = [
+    "datasets>=2.0",
+    "matplotlib>=3.8",
 ]
 
 [build-system]
@@ -25,4 +29,9 @@ where = ["."]
 include = ["llmprover*"]
 
 [tool.setuptools.package-data]
-llmprover = ["prover_agents/prompts/*.txt", "prompts/*.txt"]
+llmprover = [
+    "prover_agents/prompts/*.txt",
+    "prover_agents/prompts/**/*.txt",
+    "prompts/*.txt",
+    "prompts/history/*.txt",
+]

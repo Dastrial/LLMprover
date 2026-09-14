@@ -95,14 +95,10 @@ def lookup_completion(
     fill_values = {
         key: value for key, value in prompt_values.items() if key != "attempt_history"
     }
-    before = fill_prompt(
-        _prompt_text(user_before_prompt), **fill_values
-    )
+    before = fill_prompt(_prompt_text(user_before_prompt), **fill_values)
     if not before.endswith("\n"):
         before = f"{before}\n"
-    after = fill_prompt(
-        _prompt_text(user_after_prompt), **fill_values
-    )
+    after = fill_prompt(_prompt_text(user_after_prompt), **fill_values)
     if after and not after.endswith("\n"):
         after = f"{after}\n"
     if history and not history.endswith("\n"):
@@ -111,7 +107,9 @@ def lookup_completion(
         role="user",
         parts=(PromptPart(before + history, cache_breakpoint=True), PromptPart(after)),
     )
-    return model.complete([PromptMessage.text("system", system, cache_breakpoint=True), user])
+    return model.complete(
+        [PromptMessage.text("system", system, cache_breakpoint=True), user]
+    )
 
 
 def parse_lemma_names(text: str) -> list[str]:
@@ -439,14 +437,10 @@ def request_search_then_abouts(
     fill_values = {
         key: value for key, value in prompt_values.items() if key != "attempt_history"
     }
-    before = fill_prompt(
-        _prompt_text(user_before_prompt), **fill_values
-    )
+    before = fill_prompt(_prompt_text(user_before_prompt), **fill_values)
     if not before.endswith("\n"):
         before = f"{before}\n"
-    after = fill_prompt(
-        _prompt_text(user_after_prompt), **fill_values
-    )
+    after = fill_prompt(_prompt_text(user_after_prompt), **fill_values)
     if after and not after.endswith("\n"):
         after = f"{after}\n"
     if history and not history.endswith("\n"):
@@ -457,7 +451,10 @@ def request_search_then_abouts(
         role="user",
         parts=(PromptPart(before + history, cache_breakpoint=True), PromptPart(after)),
     )
-    first_messages = [PromptMessage.text("system", system, cache_breakpoint=True), first_user]
+    first_messages = [
+        PromptMessage.text("system", system, cache_breakpoint=True),
+        first_user,
+    ]
     first = model.complete(first_messages)
     usage = first.usage
     select_output: str | None = None
