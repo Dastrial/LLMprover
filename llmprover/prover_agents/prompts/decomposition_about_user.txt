@@ -1,0 +1,13 @@
+FINAL ANSWER turn: decompose the following formula into simpler helper lemmas,
+then write the tactic script for the main goal.
+
+Header (libraries, scopes, local definitions — already loaded; do not re-emit):
+{header}
+
+====== STATEMENT ======
+{statement}
+
+=== Rocq About results for candidate library lemmas ===
+{about_results}
+
+Output SCRIPT, then HELPERS as specified by the system protocol.

@@ -1,0 +1,4 @@
+HARD RULE {N} — NO PROOF BYPASS
+
+Never use `admit`, `Admitted`, `Abort`, new axioms, or any equivalent bypass.
+A legitimate incomplete attempt is preferable to a proof bypass.

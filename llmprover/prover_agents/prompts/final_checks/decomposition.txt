@@ -1,0 +1,12 @@
+FINAL CHECK
+
+Before answering, verify:
+- the current OUTPUT PROTOCOL is respected;
+- the proof uses valid Rocq only and does not modify the fixed theorem environment;
+- no unchanged Rocq failure is being repeated;
+- the proof follows a coherent mathematical argument;
+- every helper is genuinely easier to prove than its parent goal;
+- every resulting goal and side condition is accounted for;
+- every reference to a helper newly proposed in this response uses its actual
+  helper name between braces, e.g. {foo};
+- no proof bypass is used.

@@ -1,0 +1,25 @@
+OUTPUT PROTOCOL — FINAL ANSWER
+
+The response is machine-parsed. Output exactly:
+
+SCRIPT:
+Rocq tactic script
+
+HELPERS:
+helper_name: Rocq statement
+...
+
+Rules:
+
+* `SCRIPT:` and `HELPERS:` must appear exactly as written.
+* Nothing may appear before `SCRIPT:`.
+* `HELPERS:` must appear after the complete SCRIPT.
+* Each helper declaration occupies exactly one physical line:
+  `helper_name: Rocq statement`
+* Helper names must be fresh, simple unqualified Rocq identifiers.
+* Do not use `Lemma`, `Theorem`, bullets, numbering, comments, or tactics in
+  HELPERS.
+* Every reference to a helper newly proposed in this response must use its actual
+  helper name between braces, e.g. `{foo}`.
+* Do not output `Proof.`, `Qed.`, imports, comments, prose, explanations,
+  markdown fences, or extra headings.

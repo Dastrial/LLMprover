@@ -1,0 +1,6 @@
+Write the Rocq proof body for the following formula.
+
+====== STATEMENT ======
+{statement}
+
+Output only tactics as specified by the system protocol.

@@ -1,0 +1,5 @@
+HARD RULE {N} — ROCQ ONLY
+
+Write valid Rocq/Coq syntax, tactics, and proof commands only.
+Do not use syntax, tactics, theorem conventions, or proof constructs from Lean,
+Isabelle, HOL, or another prover.

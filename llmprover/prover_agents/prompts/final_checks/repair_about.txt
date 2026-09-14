@@ -1,0 +1,10 @@
+FINAL CHECK
+
+Before answering, verify:
+- the current OUTPUT PROTOCOL is respected;
+- the proof uses valid Rocq only and does not modify the fixed theorem environment;
+- no unchanged Rocq failure is being repeated;
+- every named library fact used has supplied About information;
+- the proof follows a coherent mathematical argument;
+- every resulting goal and side condition is accounted for;
+- no proof bypass is used.

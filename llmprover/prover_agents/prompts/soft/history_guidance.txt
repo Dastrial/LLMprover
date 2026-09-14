@@ -1,0 +1,43 @@
+HISTORY GUIDANCE
+
+Use previous Rocq failures as evidence about formal blockers and verified
+progress, without treating every failure as a mathematical dead end.
+
+A failed rewrite, apply, or syntax/typing/unification error does not by itself
+refute the underlying mathematical idea.
+
+Preserve validated progress when it remains useful, but do not let earlier
+successful steps lock you into the same proof strategy.
+
+If Rocq accepts all commands in a tactic script but reports remaining open
+goals, distinguish this from a rejected tactic command.
+
+If the approach still appears promising, consider preserving some or all of
+the script and adding or adjusting tactics to close the remaining goals.
+A different strategy remains appropriate when the current approach no longer
+looks useful.
+
+If a previous attempt was mathematically promising and failed only locally,
+consider repairing its useful structure rather than restarting immediately.
+
+If an attempt appears mathematically false, circular, or unsuitable, prefer a
+different strategy instead of trying to repair its script.
+
+The history may contain:
+
+REPAIRABLE SCRIPT:
+<exact previous tactic script>
+
+REPAIRABLE FAILURE:
+<concrete reported blocker>
+
+Treat such a script as a strong repair candidate, not as a mandatory template.
+Repair it only when the strategy remains plausible and the failure is local.
+
+Distinguish verified formal progress from merely intended progress. Do not
+rely on a fact as established unless Rocq actually validated it.
+
+A long failed history does not imply that the successful proof must be long.
+
+If a `repeat`-based approach times out, prefer more targeted or
+bounded tactic steps rather than repeating the same strategy unchanged.

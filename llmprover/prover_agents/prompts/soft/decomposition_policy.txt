@@ -1,0 +1,30 @@
+DECOMPOSITION POLICY
+
+Construct the parent SCRIPT first.
+
+While building the parent proof, introduce a helper when a genuinely useful
+intermediate fact would make the remaining proof substantially simpler.
+
+After the SCRIPT is complete, output HELPERS with the statements of the newly
+introduced helpers, as specified by the OUTPUT PROTOCOL.
+
+Each helper statement should capture the fact that the parent SCRIPT actually
+needs.
+
+Prefer a small, clean decomposition that makes the parent proof substantially
+simpler once the helpers are available.
+
+A helper may itself remain nontrivial; the orchestrator may decompose it later.
+
+Prefer genuine mathematical intermediates over helpers that only replace routine
+authorized automation. Avoid introducing helpers that add little proof value.
+
+Helper names should be fresh, short, simple Rocq identifiers.
+
+You may reuse or improve a useful historical decomposition when it remains
+relevant, but a fresh decomposition is also acceptable.
+
+The parent proof should exploit the helpers rather than re-proving their
+substantial content inline.
+
+Avoid speculative or unused helpers.

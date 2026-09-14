@@ -1,0 +1,6 @@
+Decompose the following formula into simpler helper lemmas, then write the tactic script for the main goal.
+
+====== STATEMENT ======
+{statement}
+
+Output SCRIPT, then HELPERS as specified by the system protocol.

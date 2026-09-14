@@ -1,4 +1,4 @@
-"""Tests for llmprover.agent_registry."""
+"""Tests for llmprover.prover_agents.agent_registry."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from llmprover.agent_registry import AgentRegistry
+from llmprover.prover_agents.agent_registry import AgentRegistry
 from llmprover.domain import LemmaNode, Polarity, ProofAttempt
-from llmprover.llm_client import TokenUsage
+from llmprover.llm.client import TokenUsage
 from llmprover.prover_agents.prover_agent import ProverAgent
 
 
@@ -86,3 +86,40 @@ def test_get_is_lazy_until_called() -> None:
     assert StubAgentA.init_count == 0
     registry.get(agent_id, MagicMock())
     assert StubAgentA.init_count == 1
+
+
+def test_get_injects_shared_history_presenter() -> None:
+    from llmprover.history.presenter import DeterministicHistoryPresenter
+
+    shared = DeterministicHistoryPresenter.repair()
+
+    class StubWithPresenter(ProverAgent):
+        DEFAULT_SPEC = "stub with presenter"
+
+        def __init__(
+            self,
+            model: object,
+            *,
+            history_presenter: object | None = None,
+        ) -> None:
+            self.model = model
+            self.history_presenter = history_presenter
+
+        def prove(
+            self, node: LemmaNode, polarity: Polarity
+        ) -> tuple[ProofAttempt, TokenUsage]:
+            raise NotImplementedError
+
+    registry = AgentRegistry()
+    agent_id = registry.register(StubWithPresenter, history_presenter=shared)
+    agent = registry.get(agent_id, MagicMock())
+
+    assert agent.history_presenter is shared
+
+
+def test_get_omits_presenter_kwarg_when_unregistered() -> None:
+    registry = AgentRegistry()
+    agent_id = registry.register(StubAgentA)
+    agent = registry.get(agent_id, MagicMock())
+    assert isinstance(agent, StubAgentA)
+    assert not hasattr(agent, "history_presenter")

@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import ClassVar
 
 from llmprover.domain import LemmaNode, Polarity, ProofAttempt
-from llmprover.llm_client import TokenUsage
+from llmprover.llm.client import TokenUsage
 
 
 class ProverAgent(ABC):
@@ -32,3 +32,23 @@ class ProverAgent(ABC):
         ``polarity`` selects whether to attack ``P`` or ``~P``.
         Returns the attempt and LLM token usage spent to produce it.
         """
+
+    def describe(self, usage: TokenUsage | None = None) -> str:
+        """One-line description stored on ``ProofAttempt.agent``.
+
+        Default: class name, plus model and reasoning tokens when this agent
+        wraps an ``LLMClient``. Subclasses may override.
+        """
+        parts = [type(self).__name__]
+        model = getattr(self, "model", None)
+        if model is None:
+            return parts[0]
+        model_name = getattr(model, "model", None)
+        if not isinstance(model_name, str) or not model_name:
+            model_name = "?"
+        effort = getattr(model, "reasoning_effort", None)
+        if isinstance(effort, str) and effort:
+            parts.append(f"model={model_name} reasoning={effort}")
+        else:
+            parts.append(f"model={model_name}")
+        return ", ".join(parts)

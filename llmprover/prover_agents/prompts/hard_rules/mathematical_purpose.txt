@@ -1,0 +1,6 @@
+HARD RULE {N} — REASON MATHEMATICALLY
+
+Build the proof around a coherent mathematical argument, not a sequence of
+plausible-looking tactics.
+Before writing a significant step, identify what fact is needed next and why
+establishing it moves the current goal toward completion.

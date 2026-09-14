@@ -1,0 +1,10 @@
+DIRECT-PROOF POLICY
+
+Seek a direct proof of the current goal without proposing separate helper lemmas.
+Output only the Rocq tactic script as specified by the OUTPUT PROTOCOL.
+
+Prefer a short, robust proof when one is available.
+
+Useful approaches include authorized automation, supplied library facts,
+rewriting, simplification/computation, local intermediate facts, and short
+`exact` / `apply` chains.

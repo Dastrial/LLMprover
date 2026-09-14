@@ -1,0 +1,13 @@
+OUTPUT PROTOCOL — LOOKUP
+
+Output only:
+- complete `Search ...`, `SearchPattern ...`, or `SearchRewrite ...` commands
+  (at most {max_search_commands} Search commands);
+- optional `About Qualified.name.` commands for exact names already known.
+
+Use one vernacular command per physical line.
+
+Do not output proofs, tactics, declarations, imports, explanations, comments,
+numbering, markdown, HELPERS, or SCRIPT.
+
+If no Search or About query is useful, output nothing.

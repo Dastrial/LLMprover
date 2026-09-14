@@ -1,0 +1,47 @@
+COMMON PROOF GUIDANCE
+
+Prefer short, robust proofs that completely close the lemma.
+
+Prefer simple one-command-per-line scripts when possible.
+When possible, keep lines under 80 characters.
+
+Useful basic Rocq tactics include:
+`intros`, `exact`, `apply`, `rewrite`, `simpl`, `cbn`, `unfold`,
+`reflexivity`, `destruct`, `induction`, `assert`, `pose proof`,
+`specialize`, `compute`, `constructor`, `split`, `left`, `right`, `exists`,
+`discriminate`, `inversion`, `subst`, `change`, `replace`, `symmetry`,
+`transitivity`.
+
+Consider case analysis or induction only when the structure of the theorem
+actually requires it.
+
+For closed concrete computations, prefer simple computation or appropriate
+authorized automation.
+
+If you use `simpl`, `cbn`, `compute`, `ring_simplify`, `field_simplify`, or
+another normalization tactic, do not assume normalization alone finishes the
+theorem — verify that all resulting goals are closed.
+
+After `apply`, `rewrite`, `assert`, or `replace`, consider using a tactical such
+as `; auto` when appropriate to discharge routine side goals immediately.
+Do not rely on it blindly: make sure all remaining goals are understood.
+
+When a remaining goal appears routine, consider a simple closing tactic such as
+`reflexivity`, `assumption`, `exact`, `auto`, or suitable authorized automation.
+
+Computation or normalization may simplify a goal without closing it; sometimes
+a final `reflexivity` or another small closing step is still needed.
+
+Use `repeat` only when repeated execution is expected to make clear progress
+toward termination.
+
+Be especially careful with repeated rewriting: a rewrite can expose another
+instance of the same pattern and lead to very long or nonterminating tactic
+execution.
+
+Do not substitute Lean tactics such as `simp`, `rw`, `linarith`, `nlinarith`,
+or `norm_num` for their Rocq counterparts.
+Avoid Lean-style standalone `by` proof blocks and other Lean-specific proof
+syntax.
+Do not infer from this that the token `by` is forbidden in Rocq: use it only
+where it is valid Rocq syntax, for example in `assert (H : P) by lia.`.

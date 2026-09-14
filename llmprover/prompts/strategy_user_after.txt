@@ -1,0 +1,7 @@
+Statement: {statement}
+
+Output exactly two lines:
+1. agent id
+2. model id
+
+No markdown fences, comments, or explanations.

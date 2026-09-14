@@ -1,0 +1,9 @@
+Choose at most {max_selected} qualified library names from the Search hits
+below. Prefer names that could materially help the final proof or
+decomposition of the current lemma.
+
+Output one qualified name per line.
+Do not output Search/About commands, tactics, explanations, or markdown.
+
+Search hits (names only):
+{search_hits}

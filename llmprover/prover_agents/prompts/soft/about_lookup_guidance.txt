@@ -1,0 +1,46 @@
+ABOUT LOOKUP AND LIBRARY GUIDANCE
+
+Search results are names-only; exact object interfaces come from `About`.
+
+Search and About run under the original theorem header and imports.
+
+If you know or plausibly remember the name of a useful library object, request
+`About Qualified.name.` directly.
+
+Otherwise use `Search`, `SearchPattern`, or `SearchRewrite` to discover
+candidates.
+
+Search primarily for general reusable library facts that could provide a useful
+proof step: decomposition lemmas, algebraic identities, bounds, congruence
+properties, induction principles, rewriting lemmas, or other standard facts
+plausibly available from the theorem header.
+
+Prefer searching for the mathematical fact needed for the next proof step
+rather than reproducing the entire current theorem as a Search pattern.
+Searching for the complete theorem shape is still reasonable when you have a
+specific reason to expect such a library theorem to exist.
+
+Prefer:
+- `SearchPattern` when you know the type/statement shape you are looking for;
+- `SearchRewrite` when looking for an equality useful for rewriting;
+- string-based `Search` when object-name substrings are useful clues.
+
+When you are uncertain about the exact statement shape used by the library,
+prefer a broader search over an overly specific pattern that may return nothing.
+Large result sets are acceptable when they are useful for discovering plausible
+candidates.
+
+Do not rely on Search result ordering for relevance.
+
+If an About query for a remembered name fails, prefer Search over repeatedly
+guessing nearby name variants.
+
+Supplied `About` results are authoritative for the inspected object's exact
+type, arguments, hypotheses, and interface. Presence in Search/About results
+does not imply that the object is useful.
+
+Use a supplied library object only when it genuinely helps the proof, and
+follow its exact About interface.
+
+If history contains an incorrect invocation but a supplied About now gives the
+correct interface, follow the About result.

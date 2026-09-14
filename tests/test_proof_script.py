@@ -1,4 +1,4 @@
-"""Tests for llmprover.proof_script."""
+"""Tests for llmprover.rocq.proof_script."""
 
 from __future__ import annotations
 
@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from llmprover.proof_script import ProofScript
+from llmprover.rocq.proof_script import (
+    ProofScript,
+    shift_tactic_region,
+    tactic_line_span,
+)
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 
@@ -38,3 +42,39 @@ def test_proof_script_from_file_with_directory(tmp_path: Path) -> None:
     dir_path.mkdir()
     with pytest.raises(FileNotFoundError):
         ProofScript.from_file(dir_path)
+
+
+# --- tactic_line_span / shift_tactic_region ---
+
+
+def test_tactic_line_span_by_prefix_and_tactic_sizes() -> None:
+    assert tactic_line_span("a\nb\n", "exact I.") == (3, 3)
+    assert tactic_line_span("a\nb\n", "idtac.\nfoo.\nbar.") == (3, 5)
+    assert tactic_line_span("", "idtac.\nfoo.\nbar.") == (1, 3)
+
+
+def test_shift_tactic_region_applies_prefix_newlines() -> None:
+    source = ProofScript(
+        code="Lemma t: True.\nProof.\nidtac.\nQed.\n",
+        tactic_start_line=3,
+        tactic_end_line=4,
+    )
+    prefix = "From Stdlib Require Import Lia.\n\n"
+    assert shift_tactic_region(source, prefix) == (5, 6)
+
+
+def test_shift_tactic_region_unchanged_with_empty_prefix() -> None:
+    source = ProofScript(
+        code="Lemma t: True.\nProof.\nidtac.\nQed.\n",
+        tactic_start_line=3,
+        tactic_end_line=4,
+    )
+    assert shift_tactic_region(source, "") == (3, 4)
+
+
+def test_shift_tactic_region_returns_none_without_span() -> None:
+    source = ProofScript(code="Lemma t: True.\nProof.\nlia.\nQed.\n")
+    assert shift_tactic_region(source, "From Stdlib Require Import Lia.\n\n") == (
+        None,
+        None,
+    )

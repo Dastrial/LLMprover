@@ -1,0 +1,2 @@
+Header (libraries, scopes, local definitions — already loaded; do not re-emit):
+{header}
