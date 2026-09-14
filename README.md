@@ -1,133 +1,180 @@
 # LLMprover
 
-LLM-driven automatic theorem proving for Rocq/Coq, based on lemma-decomposition strategies and dual-polarity search (prove `P` or refute it by proving `~P`).
+Budget-aware proof search with LLMs and Rocq as the formal target language.
 
-## What works today
+LLMprover does more than send a theorem to a language model once. It maintains
+a graph of proof obligations, chooses where to spend the next attempt, asks
+specialized agents for direct proofs, repairs, or helper-lemma decompositions,
+and validates every candidate with `coqc`. Search stops when the root theorem
+is proved or its dollar/attempt budget is exhausted.
 
-- **Orchestrator** — search loop over a `LemmaNode` tree with token/attempt budgets
-- **Lemma selection** — `SimpleLemmaSelectionStrategy` (least-attempted open nodes, polarity alternation, frontier/closure propagation)
-- **Attempt strategy** — `LLMAttemptStrategy` picks agent + model via an LLM stratège
-- **Registries** — `AgentRegistry` and `ModelRegistry` (lazy instantiation, catalogue specs for the stratège)
-- **Prover agents** — direct, repair-direct, decomposition (`prove(node, polarity)`)
-- **Rocq checking** — assemble and validate `.v` scripts via `coqc` (statement follows attempt polarity: `P` or `~ (P)`)
-- **Multi-provider LLM client** — OpenAI, Anthropic, Mistral (with `TokenUsage` tracking)
-- **Domain types** — `Goal`, `Polarity`, `Position`, `ProofAttempt`, `AttemptRecord`, `LemmaNode`
-- Test suite with mocked LLM / `coqc` calls
+## Results
 
-## Design snapshot
+The `positive_retry` campaign evaluated all 243 problems accepted by the
+loader from the miniF2F-rocq **test split**, with a budget of **$0.04 per
+problem**:
 
-- Each lemma is identified by a single `Goal` whose statement is a formula `P`.
-- The search may try to prove `P` **or** its negation `~P`. Both kinds of attempts belong to the same lemma and are stored in two separate histories (positive and negative).
-- If a proof of `~P` succeeds, the lemma is **refuted**: that outcome is an error for the parent that depended on proving `P`, and it must propagate upward.
-- In the first version, `~P` is obtained by wrapping the statement as `~ (P)`.
-- Agents offer three generation strategies — **direct**, **repair**, and **decomposition** — each usable on either polarity (`P` or `~P`).
-- The orchestrator repeatedly: select (position, polarity) → decide agent+model → generate attempt → `coqc` check → update histories and selection state.
+| Metric | Result |
+|---|---:|
+| Problems evaluated | 243 |
+| Theorems proved | **75 / 243 (30.9%)** |
+| Total API cost | **$7.49** |
+| Successful runs below $0.01 | **64 / 75** |
+| Successful runs at or below $0.04 | **74 / 75** |
 
-## Roadmap
+Among the 75 successful runs, the median search took **2 attempts**, and 55
+finished within 5 attempts. Most final proofs use standard Rocq automation
+such as `lia`, `lra`, `nra`, `ring`, or `compute`, sometimes after the model
+has transformed the goal into a suitable form.
 
-- [x] Orchestration + strategies (walk `LemmaNode` trees with dual attempt histories)
-- [ ] **`check_attempt` assumption check** — after a successful compile, verify that the main goal's proof depends only on lemmas listed in `new_lemmas` (e.g. via Rocq `Print Assumptions`)
-- [ ] **Library imports** — `Require Import` / prelude configuration
-- [ ] **Custom axiom environments** — goals over a user-provided context
-- [ ] Interactive proving mode with Pytanque (`pytanque_session.py` is a stub)
+![Cumulative percentage of proved theorems by per-problem cost](results/minif2f/positive_retry/proved_vs_cost.png)
+
+The generated [campaign report](results/minif2f/positive_retry/report.txt)
+contains the aggregate cost buckets. Two complete logs illustrate the range
+of successful searches:
+
+- [`mathd_algebra_44`](results/minif2f/positive_retry/case_studies/mathd_algebra_44.log):
+  a typical shallow success, closed in one attempt with `lra`;
+- [`mathd_numbertheory_765`](results/minif2f/positive_retry/case_studies/mathd_numbertheory_765.log):
+  a 27-attempt search that constructs and proves a coherent chain of three
+  helper lemmas before assembling the final proof.
+
+See the [case-study guide](results/minif2f/positive_retry/case_studies/README.md)
+for a short explanation of both logs.
+
+## How it works
+
+Each iteration of the orchestrator performs one proof-search action:
+
+1. A `LemmaSelectionStrategy` selects an open node in the proof-obligation
+   graph.
+2. An `AttemptStrategy` selects a prover agent and an LLM.
+3. The agent proposes a direct proof, repairs a previous proof, or decomposes
+   the goal into helper lemmas.
+4. `CoqcBackend` assembles a complete Rocq fragment and checks it with `coqc`.
+5. The attempt and its diagnostics are recorded, and the graph is updated.
+6. When all dependencies of a successful decomposition are proved, the
+   complete root proof is reconstructed and compiled again.
+
+The campaign uses `PositiveRetryLemmaSelectionStrategy`. It schedules only
+positive proof attempts, gives fresh helper obligations several opportunities,
+then makes their parent competitive again so an unproductive decomposition
+does not trap the search indefinitely.
+
+### Prover agents
+
+The available generation modes are:
+
+- **direct**: produce a proof from the current goal;
+- **repair**: use earlier scripts and Rocq diagnostics to try again;
+- **decomposition**: introduce helper lemmas and a parent script that depends
+  on them;
+- **About variants**: query the available Rocq environment with `Search`,
+  `SearchPattern`, and `About` before generating the proof.
+
+A controller LLM chooses an agent and model from explicit registries. History
+presenters give agents and the controller cache-friendly views of earlier
+attempts.
+
+### Checked decomposition
+
+Generated scripts are not accepted on model output alone. `CoqcBackend` runs
+`coqc` and, for a successful decomposition, uses `Print Assumptions` to check
+that the parent proof depends only on its declared helpers, names available in
+the goal environment, or explicitly allowed axioms.
+
+Helper references use placeholders such as `{helper}`. They are resolved to
+the corresponding child-node names when scripts are checked and when the final
+proof is assembled. Convertibility checks can merge equivalent helpers with
+existing nodes, turning the initial search tree into a DAG.
+
+This assumption check is a consistency mechanism, not a security boundary: it
+was not designed to validate adversarial Rocq input.
 
 ## Quick start
 
+Prerequisites:
+
+- Python 3.11 or newer;
+- Rocq with `coqc` available on `PATH`;
+- an OpenAI API key for the supplied demo and evaluation configuration.
+
+Install the project and run the tests:
+
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,bench]"
 python3 -m pytest
-python main.py   # Orchestrator on and_or_distrib (needs MISTRAL_API_KEY + coqc)
 ```
 
-## API keys
-
-`main.py` loads variables from a `.env` file at the project root (via `python-dotenv`). Create one with the key for your provider:
+Create a `.env` file at the repository root:
 
 ```bash
-# .env  (gitignored — do not commit)
-MISTRAL_API_KEY=your-key-here
+OPENAI_API_KEY=your-key-here
 ```
 
-`main.py` currently wires Mistral models (`mistral-small-latest` as stratège + catalogue; `mistral-large-latest` as stronger option). The LLM client module also supports OpenAI and Anthropic via the same pattern:
-
-| Provider  | Environment variable   |
-|-----------|------------------------|
-| Mistral   | `MISTRAL_API_KEY`      |
-| OpenAI    | `OPENAI_API_KEY`       |
-| Anthropic | `ANTHROPIC_API_KEY`    |
-
-Alternatively, export the variable in your shell before running:
+Then run the small demo or a three-problem evaluation:
 
 ```bash
-export MISTRAL_API_KEY=your-key-here
 python main.py
+python eval_minif2f.py --lemma-selector positive-retry --limit 3
 ```
 
-Shell exports take precedence over `.env` if both are set.
+`eval_minif2f.py` writes one resumable log per problem under
+`benchmark_runs/<selector>/`. This directory is gitignored. Running the full
+test split makes paid API calls:
 
-## Architecture
-
-```
-main.py
-   │
-   ├── orchestrator.py              Orchestrator — search loop
-   ├── attempt_strategy.py          AttemptStrategy (ABC)
-   ├── llm_attempt_strategy.py      LLM picks agent + model
-   ├── lemma_selection_strategy.py  LemmaSelectionStrategy (ABC)
-   ├── simple_lemma_selection_strategy.py
-   ├── agent_registry.py            Agent catalogue
-   ├── model_registry.py            Model catalogue
-   ├── domain.py                    Goal, Polarity, Position, ProofAttempt, …
-   ├── proof_script.py              ProofScript (.v file I/O)
-   ├── rocq.py                      CoqcBackend — assemble scripts, run coqc
-   ├── llm_client.py                LLMClient — OpenAI, Anthropic, Mistral
-   ├── prompts.py                   Prompt load / fill
-   ├── prompts/                     Strategy templates
-   ├── utils.py                     Parse LLM output, format histories
-   ├── pytanque_session.py          Stub (future interactive mode)
-   └── prover_agents/               Direct, repair, decomposition + prompts
+```bash
+python eval_minif2f.py --lemma-selector positive-retry
 ```
 
-**Dependency flow** (simplified):
+The LLM client layer also supports Mistral and Anthropic:
 
-```
-proof_script  →  domain  →  rocq
-                         →  llm_client
-                         →  utils / prompts  →  prover_agents
-                                            →  registries
-                                            →  strategies  →  orchestrator
-```
+| Provider | Environment variable |
+|---|---|
+| OpenAI | `OPENAI_API_KEY` |
+| Mistral | `MISTRAL_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
 
-| Module | Role |
-|--------|------|
-| `domain.py` | `Goal`, `Polarity`, `Position`, `ProofAttempt`, `CoqcResult`, `AttemptRecord`, `LemmaNode` |
-| `rocq.py` | Runs `coqc` on a `ProofScript` or a full `ProofAttempt` (main statement from polarity) |
-| `llm_client.py` | Stateless chat-completion wrapper; returns `CompletionResult` + `TokenUsage` |
-| `agent_registry.py` / `model_registry.py` | Catalogues with specs for the stratège; lazy `get` |
-| `LLMAttemptStrategy` | Chooses `(ProverAgent, TokenUsage)` from histories + catalogues |
-| `SimpleLemmaSelectionStrategy` | Chooses `(Position, Polarity)`; manages open set and closure |
-| `Orchestrator` | Budgeted loop: select → decide → prove → check → append → update |
-| `prover_agents/` | `ProverAgent.prove(node, polarity)` implementations |
+Shell environment variables take precedence over values loaded from `.env`.
 
-### Design notes
+## Repository structure
 
-**`ProofScript`** is a thin dataclass around a `str` (Rocq source). A plain string would work for most of the current code; the class is kept as a hook for script-level operations (`from_file`, future `replace_lemma`, etc.).
+| Area | Responsibility |
+|---|---|
+| `llmprover/domain.py` | Goals, proof attempts, graph nodes, positions, polarities, and statuses |
+| `llmprover/orchestrator.py` | Budgeted proof-search loop and final proof reconstruction |
+| `llmprover/strategy/` | Goal scheduling and agent/model selection |
+| `llmprover/prover_agents/` | Direct, repair, decomposition, and library-aware proof generation |
+| `llmprover/rocq/` | Script construction, `coqc` execution, diagnostics, helper resolution, and equivalence checks |
+| `llmprover/history/` | Prompt-facing representations of previous attempts |
+| `llmprover/llm/` | Provider clients, prompt messages, model registry, token usage, and pricing |
+| `llmprover/minif2f/` | Conversion of miniF2F-rocq rows into project goals |
+| `eval_minif2f.py` | Live evaluation, resumable logs, reports, and cost plots |
+| `results/` | Versioned aggregate results and selected full logs |
 
-**`LemmaNode`** is the search unit for one lemma: canonical `Goal` (`P`), positive and negative attempt lists, and a derived status (`Open` / `Proved` / `Refuted`). **`AttemptRecord`** stores a checked `ProofAttempt`, the `CoqcResult`, and child lemma attempt lists for decomposition. Navigation in the tree uses **`Position`** (`from_position`).
+## Limitations
 
-**Polarity.** For a lemma with statement `P`, an attempt is either positive (try to prove `P`) or negative (try to prove `~P`). The lemma’s identity stays `P`; each `ProofAttempt` records which polarity was attacked. When the negated statement is needed (prompts, `coqc` scripts), the first version builds it as `~ (P)`.
+- **Whole-script feedback is expensive.** Invalid tactic names, incomplete
+  scripts, and brittle library queries are recurring failure modes in the
+  campaign logs. Interactive Rocq sessions could reject bad steps earlier.
+- **Mathematical exploration and formalization are coupled.** The same agent
+  must find an idea and express it in valid Rocq. A separate mathematical-plan
+  stage could let this system specialize in checked formalization.
+- **Search control remains heuristic.** `positive_retry` prevents the search
+  from remaining indefinitely below one decomposition, but it is not a learned
+  or globally optimized scheduler.
+- **The evaluation is limited.** The reported campaign covers one dataset,
+  configuration, model family, and random run; it is evidence of current
+  behavior, not a general theorem-proving benchmark claim.
 
-**Decomposition invariant (not enforced yet).** When `new_lemmas` is non-empty, a valid parent proof should use *only* those admitted lemmas as logical dependencies. Today `check_attempt` only checks that the assembled script compiles.
+## Roadmap
 
-**Current limitations.** Scripts are self-contained fragments: no `Require Import`, no configurable prelude, and no rich ambient theory. The demo in `main.py` uses bare `Prop`/`/\`/`\/`/`<->` without imports.
+- [ ] Interactive, step-by-step Rocq feedback through Pytanque
+- [ ] Separate mathematical planning from Rocq formalization
+- [ ] Treat lemma scheduling as graph optimization / metareasoning under a
+      resource budget
+- [ ] Improve Rocq library discovery through better query selection and result ranking
 
-### Proof loop (implemented)
+## License
 
-1. `LemmaSelectionStrategy.select_lemma()` picks a `(Position, Polarity)`.
-2. `AttemptStrategy.decide_agent(node, polarity)` picks a `ProverAgent` (and underlying model).
-3. `ProverAgent.prove(node, polarity)` proposes a `ProofAttempt`.
-4. `CoqcBackend.make_script` assembles a complete `.v` file (using `P` or `~ (P)`) and `check_attempt` validates it.
-5. An `AttemptRecord` is appended; child `LemmaNode`s are created for `new_lemmas` (unique names).
-6. `LemmaSelectionStrategy.update` opens children on coqc success, forgets superseded frontiers, and propagates closure (`Proved` / `Refuted`).
-7. On negation success, the lemma is refuted; that cannot satisfy a parent’s proof obligations.
-8. Loop stops when the root closes or a budget (`max_input_tokens`, `max_output_tokens`, `max_attempts`) is exhausted.
+This project is released under the [MIT License](LICENSE).
