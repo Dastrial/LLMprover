@@ -1,0 +1,23 @@
+miniF2F-rocq report (test split)
+Problems evaluated : 243
+Theorems proved    : 75 / 243 (30.9%)
+Open               : 168
+Refuted            : 0
+Errors             : 0
+Total cost         : $7.489770
+Proved cost        : $0.422934
+Input tokens       : 59997039 (cache_write=18691573 cache_read=38173954)
+Output tokens      : 1189245
+
+Theorems proved by per-problem cost interval:
+  [$0.00, $0.01) : 64 theorem(s) proved
+  [$0.01, $0.02) : 4 theorem(s) proved
+  [$0.02, $0.03) : 3 theorem(s) proved
+  [$0.03, $0.04] : 3 theorem(s) proved
+  ($0.04, +∞) : 1 theorem(s) proved
+
+Cumulative (theorems proved with per-problem cost ≤ threshold):
+  ≤ $0.01 : 64 theorem(s) proved
+  ≤ $0.02 : 68 theorem(s) proved
+  ≤ $0.03 : 71 theorem(s) proved
+  ≤ $0.04 : 74 theorem(s) proved
