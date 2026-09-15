@@ -10,8 +10,11 @@ is proved or its dollar/attempt budget is exhausted.
 
 ## Results
 
-The `positive_retry` campaign evaluated all 243 problems accepted by the
-loader from the miniF2F-rocq **test split**, with a pre-attempt budget threshold of **$0.04 per problem**:
+The `positive_retry` campaign evaluated 243 of the 244 problems in the
+miniF2F-rocq **test split**. The loader skipped `amc12_2001_p5` because its
+`rocq_statement` field starts with malformed Markdown translation notes
+instead of a valid Rocq theorem declaration. Each evaluated problem used a
+pre-attempt budget threshold of **$0.04**:
 
 | Metric | Result |
 |---|---:|
