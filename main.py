@@ -5,10 +5,14 @@ from __future__ import annotations
 from dotenv import load_dotenv
 
 from eval_minif2f import build_openai_orchestrator
-from llmprover.domain import AttemptRecord, LemmaNode
+from llmprover.domain import AttemptRecord, LemmaNode, LemmaStatus
 from llmprover.minif2f.loader import problem_from_row
+from llmprover.orchestrator import assemble_complete_proof
 
 load_dotenv()  # .env: OPENAI_API_KEY=...  (or: export OPENAI_API_KEY=...)
+
+VERBOSE = False
+PRINT_ATTEMPTS = True
 
 # Easiest row from ``tests/test_minif2f_live.py``: pure computation.
 GOAL = problem_from_row(
@@ -45,10 +49,16 @@ def format_node(node: LemmaNode, indent: str = "") -> list[str]:
 
 
 if __name__ == "__main__":
-    orchestrator = build_openai_orchestrator(verbose=True)
+    orchestrator = build_openai_orchestrator(
+        verbose=VERBOSE, print_attempts=PRINT_ATTEMPTS
+    )
     print(f"Proving: {GOAL.name}")
     print(f"header:\n{GOAL.environment.header}")
     print(f"statement: {GOAL.statement}")
     node = orchestrator.prove(GOAL, max_attempts=10)
     print(f"Status: {node.status.value}")
     print("\n".join(format_node(node)))
+    if node.status is LemmaStatus.Proved:
+        print("=======")
+        print("Complete proof:")
+        print(assemble_complete_proof(node), end="")

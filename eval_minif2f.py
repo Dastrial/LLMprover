@@ -119,7 +119,10 @@ def build_lemma_selection_strategy(
 
 
 def build_openai_orchestrator(
-    *, verbose: bool = True, lemma_selector: str = DEFAULT_LEMMA_SELECTOR
+    *,
+    verbose: bool = True,
+    print_attempts: bool = True,
+    lemma_selector: str = DEFAULT_LEMMA_SELECTOR,
 ) -> Orchestrator:
     """Live miniF2F prover wiring: deterministic history, gpt-5.6-luna reasoning=none."""
     detailed_history = DeterministicHistoryPresenter.full()
@@ -148,7 +151,7 @@ def build_openai_orchestrator(
         checker=CoqcBackend(),
         lemma_selection_strategy=build_lemma_selection_strategy(lemma_selector),
         verbose=verbose,
-        print_attempts=True,
+        print_attempts=print_attempts,
         known_true=True,
     )
 

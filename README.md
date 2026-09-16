@@ -36,10 +36,10 @@ contains the aggregate cost buckets. Two complete logs illustrate the range
 of successful searches:
 
 - [`mathd_algebra_44`](results/minif2f/positive_retry/case_studies/mathd_algebra_44.log):
-  a typical shallow success, closed in one attempt with `lra`;
+  a typical shallow success, closed in one attempt with `lra`
 - [`mathd_numbertheory_765`](results/minif2f/positive_retry/case_studies/mathd_numbertheory_765.log):
   a 27-attempt search that constructs and proves a coherent chain of three
-  helper lemmas before assembling the final proof.
+  helper lemmas before assembling the final proof
 
 See the [case-study guide](results/minif2f/positive_retry/case_studies/README.md)
 for a short explanation of both logs.
@@ -67,12 +67,12 @@ does not trap the search indefinitely.
 
 The available generation modes are:
 
-- **direct**: produce a proof from the current goal;
-- **repair**: use earlier scripts and Rocq diagnostics to try again;
+- **direct**: produce a proof from the current goal
+- **repair**: use earlier scripts and Rocq diagnostics to try again
 - **decomposition**: introduce helper lemmas and a parent script that depends
-  on them;
+  on them
 - **About variants**: query the available Rocq environment with `Search`,
-  `SearchPattern`, and `About` before generating the proof.
+  `SearchPattern`, and `About` before generating the proof
 
 A controller LLM chooses an agent and model from explicit registries. History
 presenters give agents and the controller cache-friendly views of earlier
@@ -101,15 +101,32 @@ was not designed to validate adversarial Rocq input.
 
 Prerequisites:
 
-- Python 3.11 or newer;
-- Rocq with `coqc` available on `PATH`;
-- an OpenAI API key for the supplied demo and evaluation configuration.
+- Python 3.11 or newer
+- Rocq with `coqc` available on `PATH`
+  (on Windows, if `coqc` is not found, use Rocq Shell or add Rocq’s `bin`
+  directory to `PATH`)
+- an OpenAI API key for the supplied demo and evaluation configuration
 
-Install the project and run the tests:
+Create and activate a virtual environment, then install and test.
+Activation differs by platform; once the venv is active, the remaining
+commands are the same on Windows, macOS, and Linux:
 
 ```bash
-pip install -e ".[dev,bench]"
-python3 -m pytest
+# macOS / Linux
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+```powershell
+# Windows
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+```bash
+# all platforms (venv active)
+python -m pip install -e ".[dev,bench]"
+python -m pytest
 ```
 
 Create a `.env` file at the repository root:
@@ -124,6 +141,11 @@ Then run the small demo or a three-problem evaluation:
 python main.py
 python eval_minif2f.py --lemma-selector positive-retry --limit 3
 ```
+
+In `main.py`, two globals control live output: `PRINT_ATTEMPTS` (default
+`True`) prints each agent script so you can follow the search, while `VERBOSE`
+(default `False`) adds orchestrator and Rocq diagnostics. Set either to `True`
+or `False` as needed.
 
 `eval_minif2f.py` writes one resumable log per problem under
 `benchmark_runs/<selector>/`. This directory is gitignored. Both commands above make paid OpenAI API calls.
